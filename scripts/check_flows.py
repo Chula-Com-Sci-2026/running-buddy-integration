@@ -30,9 +30,15 @@ def main():
     from argon2 import PasswordHasher
     subjects=[str(uuid4()),str(uuid4())]
     clients=[]
-    with database('identity') as connection:
-        for subject in subjects:
-            connection.execute('INSERT INTO accounts(id,email,phone,password_hash,phone_verified) VALUES (%s,%s,%s,%s,true)',(subject,subject+'@example.com','+66'+str(int(uuid4().hex[:12],16))[-9:],PasswordHasher().hash('runner123')))
+    if os.getenv('IDENTITY_BACKEND') == 'team':
+        with database('identity_team') as connection:
+            password_hash=connection.execute('SELECT password_hash FROM users WHERE id=%s',(RUNNER_A,)).fetchone()[0]
+            for subject in subjects:
+                connection.execute('INSERT INTO users(id,email,phone_number,password_hash,is_phone_verified) VALUES (%s,%s,%s,%s,true)',(subject,subject+'@example.com','+66'+str(int(uuid4().hex[:12],16))[-9:],password_hash))
+    else:
+        with database('identity') as connection:
+            for subject in subjects:
+                connection.execute('INSERT INTO accounts(id,email,phone,password_hash,phone_verified) VALUES (%s,%s,%s,%s,true)',(subject,subject+'@example.com','+66'+str(int(uuid4().hex[:12],16))[-9:],PasswordHasher().hash('runner123')))
     for index,subject in enumerate(subjects):
         client=login(subject+'@example.com')
         expect(client.put('/me/profile',json={'name':f'Integration Runner {index}','bio':'Integration check','paceMin':6,'paceMax':7,'experience':'Intermediate','area':'Lumphini','availability':'Evenings','latitude':13.73,'longitude':100.541}))

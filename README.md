@@ -80,3 +80,23 @@ docker compose down
 ```
 
 Do not use `down -v` unless deliberately discarding all local databases.
+
+
+## Demo against the team Identity PR branch
+
+The teammate implementation is checked out in `../team-identity-service/` on `fix/deliverable-4-auth-integration`. The optional override uses that checkout, a separate `identity_team` database, matching JWT claims and stable demo UUIDs. The existing Python Identity repository and `identity` database remain untouched.
+
+```sh
+./scripts/start-team-identity.sh
+./scripts/test-team-identity.sh
+```
+
+Use the same browser/gateway URLs and Ray/Mali credentials. The script provisions only the additional local databases with the PostgreSQL operator, builds the checked-out branch, starts its console-only email worker on `identity.email.v1`, and seeds matching user IDs. It never merges or pulls the team branch automatically. Do not use the base Python Identity test command against the Node image; the team script runs Node's PostgreSQL-backed regression suite and complete business-flow/broker checks.
+
+To return to the preserved Python implementation and database:
+
+```sh
+./scripts/restore-local-identity.sh
+```
+
+Use the override on subsequent operations while testing the PR branch: `docker compose -f compose.yaml -f compose.team-identity.yaml ...`. Using only the base Compose file selects the Python configuration. Team registration now supports the existing frontend contract, so no frontend rewrite or token-validation weakening is needed. Fresh sessions are required after switching implementations; old refresh cookies belong to the other database.

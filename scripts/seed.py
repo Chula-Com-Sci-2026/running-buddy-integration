@@ -11,12 +11,14 @@ RUNNER_B='22222222-2222-4222-8222-222222222222'
 PAST_RUN='33333333-3333-4333-8333-333333333333'
 
 def database(name):
-    return psycopg.connect(f"postgresql://{name}:{os.environ['DB_PASSWORD']}@postgres:5432/{name}")
+    user="identity" if name.startswith("identity_team") else name
+    return psycopg.connect(f"postgresql://{user}:{os.environ['DB_PASSWORD']}@postgres:5432/{name}")
 
 def main():
-    with database('identity') as connection:
-        for subject,email,phone in [(RUNNER_A,'ray@example.com','+66811111111'),(RUNNER_B,'mali@example.com','+66822222222')]:
-            connection.execute('INSERT INTO accounts(id,email,phone,password_hash,phone_verified) VALUES (%s,%s,%s,%s,true) ON CONFLICT(id) DO NOTHING',(subject,email,phone,PasswordHasher().hash('runner123')))
+    if os.getenv('IDENTITY_BACKEND') != 'team':
+        with database('identity') as connection:
+            for subject,email,phone in [(RUNNER_A,'ray@example.com','+66811111111'),(RUNNER_B,'mali@example.com','+66822222222')]:
+                connection.execute('INSERT INTO accounts(id,email,phone,password_hash,phone_verified) VALUES (%s,%s,%s,%s,true) ON CONFLICT(id) DO NOTHING',(subject,email,phone,PasswordHasher().hash('runner123')))
     with database('profile') as connection:
         for subject,name,lat in [(RUNNER_A,'Ray Attajak',13.730),(RUNNER_B,'Mali S.',13.731)]:
             connection.execute('INSERT INTO profiles(id,name,bio,pace_min,pace_max,experience,area,availability,latitude,longitude) VALUES (%s,%s,%s,6,7,%s,%s,%s,%s,100.541) ON CONFLICT(id) DO NOTHING',(subject,name,'Evening runner','Intermediate','Lumphini Park','Evenings',lat))
