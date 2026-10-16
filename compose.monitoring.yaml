@@ -1,0 +1,25 @@
+# Optional recording tools. This changes no application endpoints or database ownership.
+services:
+  pgweb:
+    image: sosedoff/pgweb@sha256:a5256d416e2e8b92d69a4459058e3eca33a9f075d8325491644411d0bc3bd70b
+    profiles: [monitoring]
+    command:
+      - --bind=0.0.0.0
+      - --listen=8081
+      - --skip-open
+      - --sessions
+      - --bookmarks-only
+      - --bookmarks-dir=/bookmarks
+      - --queries-dir=/queries
+      - --readonly
+      - --no-ssh
+    environment:
+      DEMO_VIEWER_PASSWORD: ${DEMO_VIEWER_PASSWORD:?Run scripts/start-monitoring.sh}
+    volumes:
+      - ./monitoring/bookmarks:/bookmarks:ro
+      - ./monitoring/queries:/queries:ro
+    ports:
+      - '127.0.0.1:8081:8081'
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: unless-stopped

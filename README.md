@@ -100,3 +100,8 @@ To return to the preserved Python implementation and database:
 ```
 
 Use the override on subsequent operations while testing the PR branch: `docker compose -f compose.yaml -f compose.team-identity.yaml ...`. Using only the base Compose file selects the Python configuration. Team registration now supports the existing frontend contract, so no frontend rewrite or token-validation weakening is needed. Fresh sessions are required after switching implementations; old refresh cookies belong to the other database.
+
+
+## Video database viewer
+
+The optional [monitoring setup](monitoring/README.md) adds localhost pgweb at port 8081 with per-service bookmarks and a dedicated viewer limited to selected live views. Start with `./scripts/start-monitoring.sh` after initializing the demo; stop with `./scripts/stop-monitoring.sh`. Redis proof uses the existing CLI, and RabbitMQ uses its existing dashboard. No application service or endpoint changes are needed.

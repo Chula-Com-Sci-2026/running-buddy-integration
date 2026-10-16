@@ -1,0 +1,7 @@
+host = "postgres"
+port = 5432
+user = "demo_viewer"
+passwordvar = "DEMO_VIEWER_PASSWORD"
+database = "reputation"
+sslmode = "disable"
+readonly = true
