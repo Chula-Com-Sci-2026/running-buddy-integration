@@ -1,0 +1,344 @@
+{
+  "name": "cra-delivery4",
+  "services": {
+    "postgres": {
+      "image": "postgres:16-alpine",
+      "environment": {
+        "POSTGRES_PASSWORD": "${DB_PASSWORD:?Run scripts/init-env.py}"
+      },
+      "volumes": [
+        "postgres_data:/var/lib/postgresql/data",
+        "./scripts/init-databases.sh:/docker-entrypoint-initdb.d/01-services.sh:ro"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -U postgres"
+        ],
+        "interval": "3s",
+        "timeout": "3s",
+        "retries": 30
+      }
+    },
+    "redis": {
+      "image": "redis:7-alpine",
+      "command": [
+        "redis-server",
+        "--appendonly",
+        "yes"
+      ],
+      "volumes": [
+        "redis_data:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ],
+        "interval": "3s",
+        "timeout": "3s",
+        "retries": 30
+      }
+    },
+    "rabbitmq": {
+      "image": "rabbitmq:4.3.6-management",
+      "environment": {
+        "RABBITMQ_DEFAULT_USER": "cra",
+        "RABBITMQ_DEFAULT_PASS": "${BROKER_PASSWORD:?Run scripts/init-env.py}"
+      },
+      "ports": [
+        "127.0.0.1:15678:15672"
+      ],
+      "volumes": [
+        "rabbitmq_data:/var/lib/rabbitmq"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "rabbitmq-diagnostics",
+          "-q",
+          "ping"
+        ],
+        "interval": "5s",
+        "timeout": "5s",
+        "retries": 30
+      }
+    },
+    "identity": {
+      "build": "../identity-service",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://identity:${DB_PASSWORD}@postgres:5432/identity",
+        "OTP_ADAPTER": "console"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "profile": {
+      "build": "../profile-service",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://profile:${DB_PASSWORD}@postgres:5432/profile"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "conditions": {
+      "build": "../run-conditions-service",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "REDIS_URL": "redis://redis:6379/0"
+      },
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "scheduling": {
+      "build": "../run-scheduling-service",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://scheduling:${DB_PASSWORD}@postgres:5432/scheduling",
+        "CONDITIONS_URL": "${CONDITIONS_URL:-http://conditions:8000}"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "notification": {
+      "build": "../notification-service",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://notification:${DB_PASSWORD}@postgres:5432/notification"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "gateway": {
+      "build": "../api-gateway",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "IDENTITY_URL": "${IDENTITY_URL:-http://identity:8000}",
+        "PROFILE_URL": "${PROFILE_URL:-http://profile:8000}",
+        "CONDITIONS_URL": "${CONDITIONS_URL:-http://conditions:8000}",
+        "SCHEDULING_URL": "${SCHEDULING_URL:-http://scheduling:8000}",
+        "NOTIFICATION_URL": "${NOTIFICATION_URL:-http://notification:8000}",
+        "REPUTATION_URL": "${REPUTATION_URL:-http://reputation:3000}",
+        "DISCOVERY_TARGET": "${DISCOVERY_TARGET:-discovery:50051}"
+      },
+      "depends_on": {},
+      "restart": "unless-stopped",
+      "ports": [
+        "127.0.0.1:${GATEWAY_PORT:-8088}:8000"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "notification-worker": {
+      "build": "../notification-service",
+      "command": [
+        "python",
+        "worker.py"
+      ],
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://notification:${DB_PASSWORD}@postgres:5432/notification",
+        "AMQP_URL": "amqp://cra:${BROKER_PASSWORD}@rabbitmq:5672/%2F"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        },
+        "rabbitmq": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped"
+    },
+    "discovery": {
+      "build": {
+        "context": "../buddy-discovery-service",
+        "dockerfile": "Dockerfile.dev"
+      },
+      "command": [
+        "sh",
+        "-c",
+        "bin/rails db:prepare && bin/grpc-server"
+      ],
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgres://discovery:${DB_PASSWORD}@postgres:5432/discovery",
+        "PROFILE_URL": "${PROFILE_URL:-http://profile:8000}",
+        "TEST_DATABASE_URL": "postgres://discovery:${DB_PASSWORD}@postgres:5432/discovery_test"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped"
+    },
+    "reputation": {
+      "build": {
+        "context": "../reputation-service",
+        "dockerfile": "Dockerfile.dev"
+      },
+      "command": [
+        "sh",
+        "-c",
+        "bin/rails db:prepare && bin/rails server -b 0.0.0.0"
+      ],
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgres://reputation:${DB_PASSWORD}@postgres:5432/reputation",
+        "SCHEDULING_URL": "${SCHEDULING_URL:-http://scheduling:8000}",
+        "TEST_DATABASE_URL": "postgres://reputation:${DB_PASSWORD}@postgres:5432/reputation_test"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped"
+    },
+    "discovery-outbox": {
+      "build": {
+        "context": "../buddy-discovery-service",
+        "dockerfile": "Dockerfile.dev"
+      },
+      "command": [
+        "bin/outbox-worker"
+      ],
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgres://discovery:${DB_PASSWORD}@postgres:5432/discovery",
+        "BROKER_HTTP_URL": "http://rabbitmq:15672",
+        "BROKER_USER": "cra",
+        "BROKER_PASSWORD": "${BROKER_PASSWORD}"
+      },
+      "depends_on": {
+        "discovery": {
+          "condition": "service_started"
+        },
+        "rabbitmq": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped"
+    },
+    "tools": {
+      "build": "../api-gateway",
+      "profiles": [
+        "tools"
+      ],
+      "working_dir": "/checks",
+      "volumes": [
+        "./scripts:/checks:ro",
+        "./contracts:/contracts"
+      ],
+      "environment": {
+        "DB_PASSWORD": "${DB_PASSWORD}",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "DISCOVERY_TARGET": "discovery:50051",
+        "IDENTITY_URL": "http://identity:8000",
+        "PROFILE_URL": "http://profile:8000",
+        "CONDITIONS_URL": "http://conditions:8000",
+        "SCHEDULING_URL": "http://scheduling:8000",
+        "NOTIFICATION_URL": "http://notification:8000",
+        "REPUTATION_URL": "http://reputation:3000",
+        "AMQP_URL": "amqp://cra:${BROKER_PASSWORD}@rabbitmq:5672/%2F"
+      },
+      "command": [
+        "python",
+        "check_flows.py"
+      ]
+    }
+  },
+  "volumes": {
+    "postgres_data": {},
+    "redis_data": {},
+    "rabbitmq_data": {}
+  }
+}
