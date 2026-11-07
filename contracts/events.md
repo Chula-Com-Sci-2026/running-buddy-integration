@@ -26,6 +26,19 @@ Exchange `cra.events`, type `topic`, durable. Routing key equals `eventType`.
 
 Discovery writes outbox events atomically with request creation/response and retries publishing every two seconds. Failed or unrouted publishes leave `published_at` null. The local publisher uses RabbitMQ's management publish API, persistent messages and positive routing acknowledgement. Consumers must be provisioned before events can leave the outbox.
 
+## Trust & Safety events, version 1
+
+Same exchange and envelope as the buddy events. Every payload is `{ "runnerId": "UUID" }`.
+
+| Event | Publisher | Consumers |
+|---|---|---|
+| `PhoneVerified` | Identity (not implemented yet) | Trust & Safety |
+| `RunnerVerified` | Trust & Safety | None yet |
+| `VerificationRejected` | Trust & Safety | None yet |
+| `AccountSuspended` | Trust & Safety | None yet |
+
+Delivery is at least once and `PhoneVerified` handling is idempotent. Invalid messages go to the `trust-safety.dead` queue. Trust & Safety keeps an event in its outbox and retries until a queue is bound to its routing key, so the publisher logs a retry warning every two seconds while nothing consumes it.
+
 ## Team Identity email jobs
 
 Machine-readable payload contract: [identity-email-job.schema.json](identity-email-job.schema.json).

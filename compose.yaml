@@ -198,6 +198,7 @@
         "SCHEDULING_URL": "${SCHEDULING_URL:-http://scheduling:8000}",
         "NOTIFICATION_URL": "${NOTIFICATION_URL:-http://notification:8000}",
         "REPUTATION_URL": "${REPUTATION_URL:-http://reputation:3000}",
+        "TRUST_SAFETY_URL": "${TRUST_SAFETY_URL:-http://trust-safety:8000}",
         "DISCOVERY_TARGET": "${DISCOVERY_TARGET:-discovery:50051}"
       },
       "depends_on": {},
@@ -284,7 +285,13 @@
       },
       "restart": "unless-stopped",
       "healthcheck": {
-        "test": ["CMD", "ruby", "-rnet/http", "-e", "exit(Net::HTTP.get_response(URI('http://localhost:3000/up')).code == '200' ? 0 : 1)"],
+        "test": [
+          "CMD",
+          "ruby",
+          "-rnet/http",
+          "-e",
+          "exit(Net::HTTP.get_response(URI('http://localhost:3000/up')).code == '200' ? 0 : 1)"
+        ],
         "interval": "5s",
         "timeout": "4s",
         "retries": 20,
@@ -316,6 +323,76 @@
       },
       "restart": "unless-stopped"
     },
+    "trust-safety": {
+      "build": "../trust-safety-service",
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://trust_safety:${DB_PASSWORD}@postgres:5432/trust_safety",
+        "MODERATOR_IDS": "${MODERATOR_IDS:-}",
+        "IDENTITY_LOCK_URL": "${IDENTITY_LOCK_URL:-}"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+        ],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20
+      }
+    },
+    "trust-safety-worker": {
+      "build": "../trust-safety-service",
+      "command": [
+        "python",
+        "worker.py"
+      ],
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://trust_safety:${DB_PASSWORD}@postgres:5432/trust_safety",
+        "AMQP_URL": "amqp://cra:${BROKER_PASSWORD}@rabbitmq:5672/%2F"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        },
+        "rabbitmq": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped"
+    },
+    "trust-safety-publisher": {
+      "build": "../trust-safety-service",
+      "command": [
+        "python",
+        "publisher.py"
+      ],
+      "environment": {
+        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "DATABASE_URL": "postgresql://trust_safety:${DB_PASSWORD}@postgres:5432/trust_safety",
+        "BROKER_HTTP_URL": "http://rabbitmq:15672",
+        "BROKER_USER": "cra",
+        "BROKER_PASSWORD": "${BROKER_PASSWORD}"
+      },
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        },
+        "rabbitmq": {
+          "condition": "service_healthy"
+        }
+      },
+      "restart": "unless-stopped"
+    },
     "tools": {
       "build": "../api-gateway",
       "profiles": [
@@ -336,6 +413,7 @@
         "SCHEDULING_URL": "http://scheduling:8000",
         "NOTIFICATION_URL": "http://notification:8000",
         "REPUTATION_URL": "http://reputation:3000",
+        "TRUST_SAFETY_URL": "http://trust-safety:8000",
         "AMQP_URL": "amqp://cra:${BROKER_PASSWORD}@rabbitmq:5672/%2F"
       },
       "command": [

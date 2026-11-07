@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-for service in identity profile scheduling notification discovery reputation; do
+for service in identity profile scheduling notification discovery reputation trust_safety; do
   psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres -v service="$service" -v password="$POSTGRES_PASSWORD" <<'SQL'
 CREATE ROLE :"service" WITH LOGIN PASSWORD :'password';
 CREATE DATABASE :"service" OWNER :"service";

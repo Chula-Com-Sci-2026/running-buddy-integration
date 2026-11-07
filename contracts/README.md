@@ -13,11 +13,12 @@ This directory contains contracts for every implemented backend service and the 
 | Buddy Discovery (gRPC) | [buddy_discovery.proto](buddy_discovery.proto) | Copy of the service's versioned protobuf; seven RPCs for search, buddies and requests |
 | Buddy Discovery (HTTP) | [discovery.openapi.json](discovery.openapi.json) | Derived from Rails routes; health endpoint only |
 | Reputation | [reputation.openapi.yaml](reputation.openapi.yaml) | Existing handwritten contract; records, attendance, ratings and history |
+| Trust & Safety | [trust-safety.openapi.json](trust-safety.openapi.json) | Exported FastAPI snapshot; badges, reports, moderation and suspensions |
 | API Gateway / BFF | [gateway.openapi.json](gateway.openapi.json) | Exported FastAPI snapshot; see routing matrix below for forwarded APIs |
 | Buddy broker events | [events.md](events.md), [buddy-events.schema.json](buddy-events.schema.json) | Discovery publisher to Notification consumer |
 | Identity email jobs | [events.md](events.md), [identity-email-job.schema.json](identity-email-job.schema.json) | Team Identity publisher to its email worker |
 
-Trust & Safety has no implemented service or contract in this stack. It remains unimplemented; this catalog does not invent routes for it. The frontend consumes the gateway and is not a separate backend API. PostgreSQL, Redis, RabbitMQ and monitoring tools are infrastructure, not domain service APIs.
+The frontend consumes the gateway and is not a separate backend API. PostgreSQL, Redis, RabbitMQ and monitoring tools are infrastructure, not domain service APIs.
 
 ## Contract scope and updates
 
@@ -44,6 +45,7 @@ All protected HTTP requests carry `Authorization: Bearer <JWT>`. gRPC carries th
 - `/api/v1/runs` and run membership operations -> Scheduling.
 - `GET /api/v1/conditions` -> Run Conditions.
 - `/api/v1/notifications` and `PATCH /api/v1/notifications/{uuid}/read` -> Notification.
+- `/api/v1/verification/*`, `/api/v1/reports/*` and `/api/v1/moderation/*` -> Trust & Safety, which also decides moderator permission.
 - `/api/v1/running_records`, `/api/v1/me/history`, `POST /api/v1/runs/{uuid}/attendance`, `POST /api/v1/runs/{uuid}/ratings`, and `GET /api/v1/runners/{uuid}/rating-summary` -> Reputation.
 - `GET /api/v1/dashboard` aggregates current profile, cumulative record distance and the next scheduled run, which may be null. The total is cumulative history, not a weekly metric.
 

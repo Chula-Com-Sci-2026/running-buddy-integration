@@ -69,6 +69,17 @@ Copy a forecast key from the last command, then run `docker compose exec redis r
 
 Run contract and flow checks before switching. Adapt payload differences explicitly. Changing a URL does not migrate local accounts or run data. RabbitMQ/Kafka differences require a transport adapter; event JSON compatibility alone is insufficient.
 
+## Trust & Safety
+
+The stack runs `trust-safety`, `trust-safety-worker` and `trust-safety-publisher` behind the gateway. On a Postgres volume created before this service existed, add its database once after the stack is up; a new volume needs nothing:
+
+```sh
+./scripts/add-trust-safety-database.sh
+docker compose up -d
+```
+
+Set `MODERATOR_IDS` in `.env` to the account UUIDs allowed to moderate. Without it, nobody can. Until Identity exposes its lock route, suspensions are recorded and published, but the runner can still sign in. Identity does not publish `PhoneVerified` yet, so badges are not granted automatically. The k8s manifests do not include this service.
+
 ## Scope and boundaries
 
 Search is delegated by Discovery to Profile through its API; there is no replicated candidate read model yet. Profile public reads omit private coordinates. Phone verification is distinct from a Trust & Safety badge. Admin, moderation, reports, suspension, written reviews, reminders, public-history privacy settings and invite-only runs are deferred. Ended-run attendance opens on confirmation access; no scheduled end-run event consumer is claimed. Scheduling owns completion; Reputation persists confirmation after Scheduling accepts it. A retry reconciles a partially completed cross-service confirmation.
