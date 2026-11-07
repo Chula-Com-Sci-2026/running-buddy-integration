@@ -1,0 +1,20 @@
+# Service destinations are configuration, exactly as in Compose: each value is a Kubernetes
+# Service name resolved by cluster DNS (profile -> profile.cra.svc.cluster.local -> ClusterIP).
+# Point a value elsewhere (e.g. a teammate's service) and restart the callers to switch.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-endpoints
+data:
+  IDENTITY_URL: http://identity:5000
+  PROFILE_URL: http://profile:8000
+  CONDITIONS_URL: http://conditions:8000
+  SCHEDULING_URL: http://scheduling:8000
+  NOTIFICATION_URL: http://notification:8000
+  REPUTATION_URL: http://reputation:3000
+  # gRPC: one HTTP/2 connection per gateway pod. Through the ClusterIP Service it stays on one
+  # Discovery pod until that connection breaks. The headless Service plus round_robin opens a
+  # connection to every ready pod returned by DNS. See k8s/README.md "gRPC and replicas".
+  DISCOVERY_TARGET: dns:///discovery-headless:50051
+  DISCOVERY_LB_POLICY: round_robin
+  FRONTEND_ORIGINS: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174

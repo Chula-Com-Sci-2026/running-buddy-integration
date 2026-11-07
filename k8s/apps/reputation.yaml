@@ -1,0 +1,67 @@
+# Reputation (Rails API): attendance, ratings and running records; calls Scheduling.
+apiVersion: v1
+kind: Service
+metadata:
+  name: reputation
+  labels: {app: reputation}
+spec:
+  selector: {app: reputation}
+  ports:
+    - {name: http, port: 3000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reputation
+  labels: {app: reputation}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: reputation}
+  template:
+    metadata:
+      labels: {app: reputation}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: reputation
+          image: cra/reputation:local
+          imagePullPolicy: Never
+          # Compose runs db:prepare here; Kubernetes runs migrations once in migrate-reputation.
+          command: ["sh", "-c", "rm -f tmp/pids/server.pid && exec bin/rails server -b 0.0.0.0"]
+          ports:
+            - {name: http, containerPort: 3000}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgres://reputation:$(DB_PASSWORD)@postgres:5432/reputation"}
+            - name: SCHEDULING_URL
+              valueFrom: {configMapKeyRef: {name: service-endpoints, key: SCHEDULING_URL}}
+            # Rails host authorization: the gateway sends Host: reputation:3000.
+            - {name: ALLOWED_HOSTS, value: "reputation,reputation.cra.svc.cluster.local"}
+          startupProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 768Mi}

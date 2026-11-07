@@ -1,0 +1,123 @@
+# Buddy Discovery gRPC server and its outbox publisher.
+# Two Services select the same pods:
+#   discovery           ClusterIP: one virtual IP; kube-proxy picks a pod per TCP connection.
+#   discovery-headless  no virtual IP; DNS returns every ready pod IP, which a gRPC client
+#                       with round_robin uses to balance individual calls.
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery
+  labels: {app: discovery}
+spec:
+  selector: {app: discovery}
+  ports:
+    - {name: grpc, port: 50051, targetPort: grpc}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-headless
+  labels: {app: discovery}
+spec:
+  clusterIP: None
+  selector: {app: discovery}
+  ports:
+    - {name: grpc, port: 50051, targetPort: grpc}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery
+  labels: {app: discovery}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: discovery}
+  template:
+    metadata:
+      labels: {app: discovery}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: discovery
+          image: cra/discovery:local
+          imagePullPolicy: Never
+          # Compose runs db:prepare here; Kubernetes runs migrations once in migrate-discovery.
+          command: ["bin/grpc-server"]
+          ports:
+            - {name: grpc, containerPort: 50051}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgres://discovery:$(DB_PASSWORD)@postgres:5432/discovery"}
+            - name: PROFILE_URL
+              valueFrom: {configMapKeyRef: {name: service-endpoints, key: PROFILE_URL}}
+            # GOAWAY after 30 s (+10 s grace for in-flight calls): the gateway's gRPC channel then
+            # reconnects and re-resolves discovery-headless, so scaled-out pods receive calls.
+            - {name: GRPC_MAX_CONNECTION_AGE_MS, value: "30000"}
+          # The server registers no grpc.health.v1 service, so a native gRPC probe cannot be
+          # used; a TCP check proves only that the port accepts connections.
+          startupProbe:
+            tcpSocket: {port: grpc}
+            periodSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket: {port: grpc}
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket: {port: grpc}
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 768Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-outbox
+  labels: {app: discovery-outbox}
+spec:
+  # One publisher. Rows are row-locked while publishing, but a second poller adds no value here.
+  replicas: 1
+  selector:
+    matchLabels: {app: discovery-outbox}
+  template:
+    metadata:
+      labels: {app: discovery-outbox}
+    spec:
+      initContainers:
+        - name: wait-for-dependencies
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q && nc -z rabbitmq 15672; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: outbox
+          image: cra/discovery:local
+          imagePullPolicy: Never
+          command: ["bin/outbox-worker"]
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - name: BROKER_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgres://discovery:$(DB_PASSWORD)@postgres:5432/discovery"}
+            - {name: BROKER_HTTP_URL, value: "http://rabbitmq:15672"}
+            - {name: BROKER_USER, value: cra}
+          resources:
+            requests: {cpu: 50m, memory: 192Mi}
+            limits: {cpu: 500m, memory: 512Mi}

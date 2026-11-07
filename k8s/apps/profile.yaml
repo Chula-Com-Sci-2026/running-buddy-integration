@@ -1,0 +1,61 @@
+# Profile owns runner profiles; Discovery calls it by DNS name for runner search.
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile
+  labels: {app: profile}
+spec:
+  selector: {app: profile}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile
+  labels: {app: profile}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: profile}
+  template:
+    metadata:
+      labels: {app: profile}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: profile
+          image: cra/profile:local
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://profile:$(DB_PASSWORD)@postgres:5432/profile"}
+          # /up runs SELECT 1, so an unready pod leaves the Service endpoints until its database works.
+          readinessProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          # Gives kube-proxy time to drop this endpoint before uvicorn stops accepting connections.
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}

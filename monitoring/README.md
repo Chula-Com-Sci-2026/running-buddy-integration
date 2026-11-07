@@ -4,7 +4,7 @@ Use **pgweb for PostgreSQL**, **redis-cli for Redis**, and the existing **Rabbit
 
 ## Start for recording
 
-From `local-integration/`, first start the normal demo (team Identity branch), then add pgweb:
+From `running-buddy-integration/`, first start the normal demo (team Identity branch), then add pgweb:
 
 ```sh
 ./scripts/start-team-identity.sh
@@ -17,7 +17,7 @@ Start the frontend separately as usual. The monitoring script creates a random l
 |---|---|---|
 | pgweb | http://localhost:8081 | Real service databases and rows after a UI action |
 | RabbitMQ | http://localhost:15678 | `notifications.buddy.v1` consumers/delivery activity; `identity.email.v1` is separate |
-| Redis CLI | Terminal inside `local-integration/` | Actual forecast JSON and its remaining TTL |
+| Redis CLI | Terminal inside `running-buddy-integration/` | Actual forecast JSON and its remaining TTL |
 
 pgweb has bookmarks for team Identity, Profile, Discovery, Scheduling, Reputation, Notification and the Python Identity fallback. Pick a bookmark and **Connect**, expand **demo_monitor → Views**, then select the appropriate view. pgweb may initially expand `public`; those raw tables are intentionally inaccessible to the viewer. For the active demo choose **01-Identity-team**, not the fallback bookmark.
 

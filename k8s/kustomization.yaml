@@ -1,0 +1,23 @@
+# Long-running workloads. Jobs (k8s/jobs) are applied separately and in order by
+# k8s/scripts/deploy.sh, because Kubernetes has no equivalent of Compose depends_on.
+# The cra-secrets Secret is created by k8s/scripts/create-secrets.sh and never committed.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cra
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: cant-run-alone
+resources:
+  - namespace.yaml
+  - service-endpoints.yaml
+  - infra/postgres.yaml
+  - infra/redis.yaml
+  - infra/rabbitmq.yaml
+  - apps/identity.yaml
+  - apps/profile.yaml
+  - apps/conditions.yaml
+  - apps/scheduling.yaml
+  - apps/notification.yaml
+  - apps/discovery.yaml
+  - apps/reputation.yaml
+  - apps/gateway.yaml

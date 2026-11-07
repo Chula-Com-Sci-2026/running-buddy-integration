@@ -1,0 +1,136 @@
+# Schema migrations run once per deploy, before any Deployment is applied (k8s/scripts/deploy.sh),
+# so scaling a Deployment never starts a migration. Each Job uses its service's own image and
+# only that service's database credentials. Every migrator also serializes on a PostgreSQL
+# advisory lock and records applied versions, so a re-run or an accidental overlap is a no-op:
+#   Python services: common.migrate()    -> pg_advisory_xact_lock + schema_migrations
+#   team Identity:   scripts/migrate.js  -> pg_advisory_xact_lock + identity_schema_migrations
+#   Rails services:  bin/rails db:migrate -> ActiveRecord advisory lock + schema_migrations
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-identity
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: cra/identity:local
+          imagePullPolicy: Never
+          command: ["node", "scripts/migrate.js"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://identity:$(DB_PASSWORD)@postgres:5432/identity_team"}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-profile
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: cra/profile:local
+          imagePullPolicy: Never
+          command: ["python", "-c", "from common import migrate; migrate(); print('profile migrated')"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://profile:$(DB_PASSWORD)@postgres:5432/profile"}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-scheduling
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: cra/scheduling:local
+          imagePullPolicy: Never
+          command: ["python", "-c", "from common import migrate; migrate(); print('scheduling migrated')"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://scheduling:$(DB_PASSWORD)@postgres:5432/scheduling"}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-notification
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: cra/notification:local
+          imagePullPolicy: Never
+          command: ["python", "-c", "from common import migrate; migrate(); print('notification migrated')"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://notification:$(DB_PASSWORD)@postgres:5432/notification"}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-discovery
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: cra/discovery:local
+          imagePullPolicy: Never
+          command: ["bin/rails", "db:migrate"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgres://discovery:$(DB_PASSWORD)@postgres:5432/discovery"}
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-reputation
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: cra/reputation:local
+          imagePullPolicy: Never
+          command: ["bin/rails", "db:migrate"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgres://reputation:$(DB_PASSWORD)@postgres:5432/reputation"}
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}

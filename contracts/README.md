@@ -1,18 +1,35 @@
 # Contract catalog
 
-The JSON OpenAPI files are snapshots exported from the running services. Each service's actual `/openapi.json` is authoritative for its implemented HTTP routes. Gateway catch-all proxy routes are generic in OpenAPI; downstream contracts define the forwarded resource schemas. The older frontend YAML is a draft and does not describe every added Activity route.
+This directory contains contracts for every implemented backend service and the API gateway, including both Identity implementations. Contract files are included here so consumers can use the catalog without following paths into sibling repositories.
 
-| Surface | Contract |
-|---|---|
-| Identity | `identity.openapi.json` |
-| Profile | `profile.openapi.json` |
-| Run Conditions | `conditions.openapi.json` |
-| Run Scheduling | `scheduling.openapi.json` |
-| Notification | `notification.openapi.json` |
-| Gateway | `gateway.openapi.json`; route matrix below |
-| Discovery | `../../buddy-discovery-service/proto/buddy_discovery/v1/buddy_discovery.proto` |
-| Reputation | `reputation.openapi.yaml` |
-| Broker | `events.md` |
+| Surface | Contract | Coverage / origin |
+|---|---|---|
+| Identity (Python fallback) | [identity.openapi.json](identity.openapi.json) | Exported FastAPI snapshot; register, verify OTP, login, refresh, logout |
+| Identity (team Node.js / Express) | [team-identity.openapi.json](team-identity.openapi.json) | Derived from mounted routes, controllers and session code; includes email/phone verification and password reset |
+| Profile | [profile.openapi.json](profile.openapi.json) | Exported FastAPI snapshot; own profile, public profiles and runner listing |
+| Run Conditions | [conditions.openapi.json](conditions.openapi.json) | Exported FastAPI snapshot; weather/air-quality conditions and readiness |
+| Run Scheduling | [scheduling.openapi.json](scheduling.openapi.json) | Exported FastAPI snapshot; runs, membership and internal attendance confirmation |
+| Notification | [notification.openapi.json](notification.openapi.json) | Exported FastAPI snapshot; list notifications and mark read |
+| Buddy Discovery (gRPC) | [buddy_discovery.proto](buddy_discovery.proto) | Copy of the service's versioned protobuf; seven RPCs for search, buddies and requests |
+| Buddy Discovery (HTTP) | [discovery.openapi.json](discovery.openapi.json) | Derived from Rails routes; health endpoint only |
+| Reputation | [reputation.openapi.yaml](reputation.openapi.yaml) | Existing handwritten contract; records, attendance, ratings and history |
+| API Gateway / BFF | [gateway.openapi.json](gateway.openapi.json) | Exported FastAPI snapshot; see routing matrix below for forwarded APIs |
+| Buddy broker events | [events.md](events.md), [buddy-events.schema.json](buddy-events.schema.json) | Discovery publisher to Notification consumer |
+| Identity email jobs | [events.md](events.md), [identity-email-job.schema.json](identity-email-job.schema.json) | Team Identity publisher to its email worker |
+
+Trust & Safety has no implemented service or contract in this stack. It remains unimplemented; this catalog does not invent routes for it. The frontend consumes the gateway and is not a separate backend API. PostgreSQL, Redis, RabbitMQ and monitoring tools are infrastructure, not domain service APIs.
+
+## Contract scope and updates
+
+The exported FastAPI files are existing snapshots, not newly verified live exports. A service's actual `/openapi.json` is authoritative for its implemented HTTP routes. Gateway catch-all proxy routes are generic in OpenAPI; downstream contracts define forwarded resource schemas. Some existing responses have unconstrained schemas; use the service behavior as the authority until those schemas are completed. The Reputation contract is handwritten and currently omits some response bodies, health and the Rails PUT update alias.
+
+The team Identity contract was derived from its mounted Express routes and controller/session behavior. It is a separate implementation contract, not a replacement for the Python fallback contract. The team implementation is selected by the team-identity Compose override. Its additional email, phone and password-reset routes are **not exposed by the current gateway**; calling those through the gateway requires explicit routing changes. Neither implementation exposes a public account-lock operation.
+
+When changing a FastAPI service, export its `/openapi.json` again and review the diff. When changing Discovery, update the protobuf here from the service's versioned definition and regenerate client stubs. Update the handwritten contracts and broker schemas alongside changes to their producers and consumers. These files document implemented interfaces; they do not make unimplemented features available. JSON schemas specify producer payloads; consumers do not necessarily enforce every schema constraint.
+
+`persistence-proof.json` contains verification evidence, not an API contract.
+
+## Authentication and shared conventions
 
 All protected HTTP requests carry `Authorization: Bearer <JWT>`. gRPC carries the same value in lowercase `authorization` metadata. Tokens use issuer `cant-run-alone-local`, audience `cant-run-alone-services`, HS256 and a 15-minute expiry. Refresh tokens are HttpOnly, SameSite=Lax cookies scoped to `/api/v1/auth`; rotating/revoked state is stored in Identity. The signing key is local configuration and is never part of this catalog.
 

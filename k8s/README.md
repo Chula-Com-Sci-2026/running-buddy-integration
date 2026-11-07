@@ -1,0 +1,132 @@
+# Kubernetes deployment (Deliverable 5)
+
+Runs the same stack as `compose.yaml` — gateway, seven domain services, two workers, PostgreSQL, Redis and RabbitMQ — on a local single-node k3s cluster. This is a course demo of service discovery and non-functional requirement management, not a production or high-availability deployment. Compose remains the default workflow and is unaffected.
+
+## Decisions
+
+| Topic | Choice | Reason |
+|---|---|---|
+| Cluster | Dedicated Colima profile `cra-k8s` with k3s (`colima start --kubernetes`) | Already part of the macOS/Colima setup. A separate VM never touches the Compose VM (`default` profile) or its volumes. k3s uses the VM's Docker daemon, so locally built images need no registry. |
+| Identity | **Team Identity** (`../team-identity-service`, Express, ADR-0023 bcrypt) | Adopted for the demo on 17 Oct 2026 (Deliverable 4 plan). Same settings as `compose.team-identity.yaml`, `identity_team` database, port 5000. The Python fallback is not deployed. |
+| Discovery | Kubernetes Services + cluster DNS (CoreDNS) | No service mesh or external registry. Destinations stay configuration: `service-endpoints` ConfigMap holds the same variables as Compose. |
+| Migrations | One Job per service, run by `deploy.sh` before any Deployment | Kubernetes has no `depends_on`. Scaling a Deployment never runs a migration. All three migrators also take a PostgreSQL advisory lock and record versions, so an overlap would still be safe. |
+| Database setup | Idempotent `db-bootstrap` Job | Creates a role and an owned database per service; never drops anything. No CREATEDB/superuser for application roles. |
+| Browser access | NodePort `gateway-public` → http://localhost:30090 | Colima forwards node ports to macOS. Unlike `kubectl port-forward`, it balances over every ready gateway pod. |
+| Gateway → Discovery gRPC | Headless Service + `round_robin`, Discovery closes connections after 30 s | Measured below: the Compose-style ClusterIP target pins every call to one pod. |
+
+## Prerequisites
+
+`brew install kubectl k6 kubeconform` (k6 and kubeconform only for load tests/validation). Colima 0.9 with the `vz` VM type. The sibling repositories must be checked out next to this one, as for Compose.
+
+The VM uses 6 CPUs and 6 GiB by default (`CPUS=… MEMORY_GIB=… k8s/scripts/cluster-up.sh`). It can run while the Compose VM is up, but both share the host; stop other VMs before load tests.
+
+## Start
+
+From `running-buddy-integration/`:
+
+```sh
+k8s/scripts/cluster-up.sh      # create/resume the cra-k8s VM; restores your Docker context afterwards
+k8s/scripts/build-images.sh    # build cra/*:local into the VM (re-run after code changes, e.g. build-images.sh gateway)
+k8s/scripts/deploy.sh          # secrets -> data stores -> db-bootstrap -> migrations -> applications
+k8s/scripts/seed-demo.sh       # Ray/Mali, profiles, prepared past run (insert-only)
+k8s/scripts/check.sh           # existing check_flows.py + check_broker.py, run inside the cluster
+```
+
+Every script passes `--context colima-cra-k8s` (`KUBE_CONTEXT`) and `--context colima-cra-k8s` for Docker, so your current kubectl and Docker contexts are not used or changed.
+
+Frontend against the cluster (from `../cant-run-alone-frontend`, open http://localhost:5173 — use `localhost`, not `127.0.0.1`, so refresh cookies stay same-site):
+
+```sh
+VITE_API_BASE_URL=http://localhost:30090/api/v1 npm run dev
+```
+
+RabbitMQ management, when needed: `kubectl --context colima-cra-k8s -n cra port-forward svc/rabbitmq 15679:15672` (user `cra`, password from the Secret).
+
+## What is deployed
+
+| Workload | Kind | Service (DNS name: port) | Probes | Storage |
+|---|---|---|---|---|
+| postgres | StatefulSet | `postgres:5432` | `pg_isready` | PVC 5 Gi |
+| redis (AOF) | StatefulSet | `redis:6379` | `redis-cli ping` | PVC 1 Gi |
+| rabbitmq | StatefulSet | `rabbitmq:5672`, `:15672` | diagnostics ping / port check | PVC 1 Gi |
+| identity (team) + identity-worker | Deployment | `identity:5000` | HTTP `/up` (DB) | — |
+| profile | Deployment | `profile:8000` | HTTP `/up` (DB) | — |
+| conditions | Deployment | `conditions:8000` | HTTP `/ready` (Redis) | — |
+| scheduling | Deployment | `scheduling:8000` | HTTP `/up` (DB) | — |
+| notification + notification-worker | Deployment | `notification:8000` | HTTP `/up` (DB) | — |
+| discovery + discovery-outbox | Deployment | `discovery:50051`, `discovery-headless:50051` | TCP (no gRPC health service exists) | — |
+| reputation | Deployment | `reputation:3000` | HTTP `/up` | — |
+| gateway | Deployment | `gateway:8000`, NodePort `30090` | HTTP `/up` | — |
+
+All names and ports match Compose, which is why `check_flows.py` runs unmodified. Readiness probes remove a pod from its Service until its dependency works; liveness probes are TCP-only so a database outage does not cause restart loops. HTTP pods sleep 5 s in `preStop` so kube-proxy drops the endpoint before the server stops. Every container has CPU/memory requests and limits (application pods: 100m request, 1 CPU limit — uvicorn and Puma run one process per pod). Workers have no port and therefore no probe; the kubelet restarts them if they exit. Init containers wait for PostgreSQL/RabbitMQ in place of Compose `depends_on: service_healthy`.
+
+Secrets: `create-secrets.sh` generates `cra-secrets` (PostgreSQL superuser, shared application DB password as in Compose, JWT key, broker password, team Identity refresh key) once, inside the cluster. Nothing is written to the repository. Each Deployment receives only the keys it uses, and each service's `DATABASE_URL` names only its own database and role.
+
+Unchanged guarantees: each service owns its database (verified: every table in each database is owned by that service's role); every service validates the JWT itself and applies its own authorization; the browser reaches only the gateway.
+
+## Service discovery
+
+Callers use the Service name, never a pod address. `profile` resolves (via the namespace search path) to `profile.cra.svc.cluster.local`, a stable ClusterIP; kube-proxy forwards each new TCP connection to a ready pod listed in the Service's EndpointSlice. When a pod is replaced, the EndpointSlice changes and the name does not.
+
+To use a different implementation, edit `service-endpoints.yaml` (or `kubectl -n cra edit configmap service-endpoints`) and restart the callers (`kubectl -n cra rollout restart deployment/gateway`). Discovery and Scheduling read their single dependency URL from the same ConfigMap.
+
+### Measured: pod replacement (HTTP)
+
+`k8s/scripts/replacement-demo.sh` (Profile at 2 replicas, 20 req/s through the gateway, both original pods deleted one after the other) — `../load-tests/results/20261031T035915Z-replacement-profile/`:
+
+- 2,000 requests, **2,000 succeeded, 0 failed**; p50 11 ms, p95 22 ms, max 676 ms (single slow second right after the first deletion).
+- Pod IPs changed from 10.42.0.26/.35 to 10.42.0.37/.38; `profile` and `profile.cra.svc.cluster.local` resolved to 10.43.28.236 before and after.
+- Each replacement was Ready about 3 s after deletion.
+
+This holds because the gateway opens a new HTTP connection per request, so each request goes to an endpoint that is currently ready.
+
+### Measured: gRPC and replicas
+
+`k8s/scripts/grpc-check.sh` (1 gateway pod, 2 Discovery pods, 10 req/s on `GET /api/v1/buddy-requests`; calls counted from each Discovery pod's own log) — `../load-tests/results/20261031T040636Z-grpc-check/` and, with the connection-age setting, `20261031T041352Z-grpc-check/`:
+
+| Situation | ClusterIP target (`discovery:50051`, gRPC default pick_first — the Compose setting) | Headless + `round_robin` | Headless + `round_robin` + 30 s max connection age (deployed) |
+|---|---|---|---|
+| 2 ready pods, 30 s | 300 / 0 calls (100 % one pod) | 150 / 150 | 150 / 150 |
+| Busiest pod deleted mid-probe | 749/750 ok; 1 × 503, ~2 s stall; afterwards all calls on one pod, the other 0 | 749/750 ok; 1 × 503; replacement pod got 40 % | 749/750 ok; 1 × 503; replacement got 36 % |
+| Scale 1 → 2 mid-probe (no failure) | added pod 0 calls | **added pod 0 calls** | added pod 27 % of the 60 s probe (joins within ~30 s), 0 failures |
+
+Conclusions: a long-lived HTTP/2 channel is balanced per connection, not per call, so a ClusterIP Service alone does not spread gRPC load. `round_robin` over the headless Service spreads calls over the pods DNS returned when the channel last resolved, but it only re-resolves after a connection breaks. The server-side maximum connection age makes the gateway reconnect and re-resolve every 30 s, so scaled-out pods are used. Deleting a busy pod still fails the one call in flight on its connection (HTTP did not, because each request opens a new connection); a gateway retry for idempotent reads would remove it and is proposed, not implemented.
+
+Application changes made for this (both opt-in, Compose behaviour unchanged when unset):
+
+- `api-gateway/app.py`: `DISCOVERY_LB_POLICY` env sets the channel's `grpc.lb_policy_name`.
+- `buddy-discovery-service/bin/grpc-server`: `GRPC_MAX_CONNECTION_AGE_MS` (and `GRPC_MAX_CONNECTION_AGE_GRACE_MS`, default 10 s) set the server's max connection age.
+
+## Load tests
+
+See [`../load-tests/README.md`](../load-tests/README.md) for the 10,000-profile dataset, k6 scenarios, targets and measured results.
+
+## Demo sequence (~90 s of discovery evidence)
+
+1. (10 s) `kubectl --context colima-cra-k8s -n cra get pods,svc` — every service has a stable Service name.
+2. (15 s) `kubectl -n cra get configmap service-endpoints -o yaml` — the gateway's destinations are Service names, configurable as in Compose.
+3. (45 s) `k8s/scripts/replacement-demo.sh` — show the per-second probe lines staying at `failed=0` while the timeline logs each deletion and `2/2 ready again`. (Start it before recording; it runs about 2 minutes.)
+4. (20 s) Show `summary.md` of that run: endpoints changed, DNS answer identical, 0 failures. Then the gRPC table above: ClusterIP 100/0 versus round_robin 50/50, and the scale-out row.
+
+## Cleanup
+
+```sh
+colima stop --profile cra-k8s                 # stop the VM; all cluster data and images are kept
+kubectl --context colima-cra-k8s delete namespace cra   # DELETES the cluster's databases (PVCs) — only if intended
+colima delete --profile cra-k8s               # remove the whole VM — only if intended
+```
+
+None of these touch the Compose VM, its volumes, or the demo data stored there.
+
+## Troubleshooting
+
+- `ErrImageNeverPull`: the image is not in the VM's daemon; run `k8s/scripts/build-images.sh <name>`.
+- A Job stuck in `deploy.sh`: `kubectl -n cra logs job/<name>`; jobs are deleted and recreated on every deploy.
+- `Valid access token required` from a service but not the gateway: the pod started before `cra-secrets` existed; `kubectl -n cra rollout restart deployment/<name>`.
+- `docker compose` now talks to the wrong VM: `docker context use colima` (Colima switches contexts on `colima start`; `cluster-up.sh` restores it).
+- `localhost:30090` not answering: `kubectl -n cra get endpoints gateway-public`; Colima's port forwarder may need `colima stop/start --profile cra-k8s`.
+- Discovery calls all hit one pod after scaling: wait 30 s (connection age) or restart the gateway.
+
+## Limitations
+
+Single node, single PostgreSQL/Redis/RabbitMQ instance: pod rescheduling is demonstrated, node failure and data-store failover are not, and no uptime figure (NFR-3.1) can be derived from these short local runs. Rails services run the same development images and `RAILS_ENV=development` as Compose. Containers run as their images' default users. Discovery readiness is TCP-only until it exposes `grpc.health.v1`. The shared HS256 key keeps the ADR-0022 trust limitation.

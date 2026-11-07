@@ -1,0 +1,6 @@
+# Build context for k8s/tools/Dockerfile: never send local secrets or results.
+.env
+.env.*
+.git
+**/__pycache__
+load-tests/results

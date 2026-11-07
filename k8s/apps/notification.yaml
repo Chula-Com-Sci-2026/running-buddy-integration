@@ -1,0 +1,99 @@
+# Notification API plus its RabbitMQ consumer. Extra worker replicas would be competing
+# consumers; stored notifications are deduplicated on (event_id, recipient_id).
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification
+  labels: {app: notification}
+spec:
+  selector: {app: notification}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification
+  labels: {app: notification}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: notification}
+  template:
+    metadata:
+      labels: {app: notification}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: notification
+          image: cra/notification:local
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://notification:$(DB_PASSWORD)@postgres:5432/notification"}
+          readinessProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-worker
+  labels: {app: notification-worker}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: notification-worker}
+  template:
+    metadata:
+      labels: {app: notification-worker}
+    spec:
+      initContainers:
+        - name: wait-for-dependencies
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q && nc -z rabbitmq 5672; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        # No HTTP port: the worker reconnects to RabbitMQ in its own loop and the kubelet
+        # restarts it if the process exits.
+        - name: worker
+          image: cra/notification:local
+          imagePullPolicy: Never
+          command: ["python", "worker.py"]
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - name: BROKER_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://notification:$(DB_PASSWORD)@postgres:5432/notification"}
+            - {name: AMQP_URL, value: "amqp://cra:$(BROKER_PASSWORD)@rabbitmq:5672/%2F"}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}

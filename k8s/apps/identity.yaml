@@ -1,0 +1,113 @@
+# Identity = team Identity (Express, PR branch adopted for Deliverable 4; ADR-0023 bcrypt).
+# Same settings as compose.team-identity.yaml, except migrations run in a Job (AUTO_MIGRATE=false).
+# Port 5000 matches that override; the gateway reaches it through IDENTITY_URL.
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity
+  labels: {app: identity}
+spec:
+  selector: {app: identity}
+  ports:
+    - {name: http, port: 5000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity
+  labels: {app: identity}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: identity}
+  template:
+    metadata:
+      labels: {app: identity}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-dependencies
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q && nc -z rabbitmq 5672; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: identity
+          image: cra/identity:local
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 5000}
+          env:
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - name: BROKER_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
+            - name: ACCESS_TOKEN_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: REFRESH_TOKEN_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: TEAM_IDENTITY_REFRESH_SECRET}}
+            - {name: NODE_ENV, value: development}
+            - {name: PORT, value: "5000"}
+            - {name: DATABASE_URL, value: "postgresql://identity:$(DB_PASSWORD)@postgres:5432/identity_team"}
+            - {name: JWT_ISSUER, value: cant-run-alone-local}
+            - {name: JWT_AUDIENCE, value: cant-run-alone-services}
+            - {name: ACCESS_TOKEN_EXPIRY, value: 15m}
+            - {name: REQUIRE_PHONE_VERIFICATION, value: "true"}
+            - {name: AUTO_SEND_PHONE_OTP, value: "true"}
+            - {name: OTP_DELIVERY, value: console}
+            - {name: AUTO_MIGRATE, value: "false"}
+            - {name: COOKIE_SECURE, value: "false"}
+            - {name: RABBITMQ_REQUIRED, value: "true"}
+            - {name: RABBITMQ_URL, value: "amqp://cra:$(BROKER_PASSWORD)@rabbitmq:5672/%2F"}
+            - {name: NOTIFICATION_QUEUE, value: identity.email.v1}
+          readinessProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 384Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-worker
+  labels: {app: identity-worker}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: identity-worker}
+  template:
+    metadata:
+      labels: {app: identity-worker}
+    spec:
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until nc -z rabbitmq 5672; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        # Console-only email/SMS job consumer for identity.email.v1 (no HTTP port).
+        - name: worker
+          image: cra/identity:local
+          imagePullPolicy: Never
+          command: ["node", "workers/notificationWorker.js"]
+          env:
+            - name: BROKER_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
+            - {name: RABBITMQ_URL, value: "amqp://cra:$(BROKER_PASSWORD)@rabbitmq:5672/%2F"}
+            - {name: NOTIFICATION_QUEUE, value: identity.email.v1}
+            - {name: EMAIL_DELIVERY, value: console}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 192Mi}

@@ -1,0 +1,61 @@
+# Run Scheduling owns runs and membership; calls Run Conditions when a run is created.
+apiVersion: v1
+kind: Service
+metadata:
+  name: scheduling
+  labels: {app: scheduling}
+spec:
+  selector: {app: scheduling}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduling
+  labels: {app: scheduling}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: scheduling}
+  template:
+    metadata:
+      labels: {app: scheduling}
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -q; do sleep 2; done"]
+          resources:
+            limits: {cpu: 100m, memory: 32Mi}
+      containers:
+        - name: scheduling
+          image: cra/scheduling:local
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - name: DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
+            - {name: DATABASE_URL, value: "postgresql://scheduling:$(DB_PASSWORD)@postgres:5432/scheduling"}
+            - name: CONDITIONS_URL
+              valueFrom: {configMapKeyRef: {name: service-endpoints, key: CONDITIONS_URL}}
+          readinessProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}

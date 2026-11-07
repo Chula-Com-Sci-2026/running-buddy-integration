@@ -1,0 +1,51 @@
+# Run Conditions: live Open-Meteo/CAMS behind the shared Redis cache (no database).
+apiVersion: v1
+kind: Service
+metadata:
+  name: conditions
+  labels: {app: conditions}
+spec:
+  selector: {app: conditions}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conditions
+  labels: {app: conditions}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: conditions}
+  template:
+    metadata:
+      labels: {app: conditions}
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: conditions
+          image: cra/conditions:local
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8000}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - {name: REDIS_URL, value: "redis://redis:6379/0"}
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}

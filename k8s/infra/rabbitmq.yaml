@@ -1,0 +1,65 @@
+# Broker for Discovery outbox -> Notification and team Identity email jobs.
+# A StatefulSet keeps the pod hostname (rabbitmq-0), and therefore the node name and its data
+# directory, stable across restarts.
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  labels: {app: rabbitmq}
+spec:
+  selector: {app: rabbitmq}
+  ports:
+    - {name: amqp, port: 5672, targetPort: 5672}
+    - {name: management, port: 15672, targetPort: 15672}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  labels: {app: rabbitmq}
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels: {app: rabbitmq}
+  template:
+    metadata:
+      labels: {app: rabbitmq}
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:4.3.6-management
+          ports:
+            - {name: amqp, containerPort: 5672}
+            - {name: management, containerPort: 15672}
+          env:
+            - {name: RABBITMQ_DEFAULT_USER, value: cra}
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/rabbitmq}
+          startupProbe:
+            exec: {command: ["rabbitmq-diagnostics", "-q", "ping"]}
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 36
+          readinessProbe:
+            exec: {command: ["rabbitmq-diagnostics", "-q", "check_port_connectivity"]}
+            periodSeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            exec: {command: ["rabbitmq-diagnostics", "-q", "ping"]}
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 4
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 768Mi}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests: {storage: 1Gi}

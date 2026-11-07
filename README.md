@@ -1,8 +1,10 @@
-# Can't Run Alone — local Deliverable 4 integration
+# Running Buddy Integration
 
 Runs seven independently owned domain services, a gateway, real PostgreSQL, real Redis and RabbitMQ. All repositories must be sibling folders. No application shares another application's tables. This is a local course demo with scoped functionality, not a production deployment.
 
 ## Start
+
+For Colima, allocate at least 4 GB RAM to the full demo stack (`colima start --cpu 4 --memory 4`). The 2 GB default was observed with only 25 MB available and API requests timing out. Stop Colima before changing the allocation; existing database volumes are retained.
 
 From this repository:
 

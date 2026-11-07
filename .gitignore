@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 .DS_Store
 contracts/persistence-proof.json
+
+# raw load-test output stays local
+load-tests/results/

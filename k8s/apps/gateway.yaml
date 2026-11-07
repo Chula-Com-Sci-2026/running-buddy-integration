@@ -1,0 +1,67 @@
+# API Gateway / BFF: the only browser-facing service. Internal callers (checks, k6) use the
+# ClusterIP Service `gateway`; the browser uses the NodePort Service `gateway-public` below.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels: {app: gateway}
+spec:
+  selector: {app: gateway}
+  ports:
+    - {name: http, port: 8000, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels: {app: gateway}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: gateway}
+  template:
+    metadata:
+      labels: {app: gateway}
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: gateway
+          image: cra/gateway:local
+          imagePullPolicy: Never
+          ports:
+            - {name: http, containerPort: 8000}
+          envFrom:
+            # IDENTITY_URL, PROFILE_URL, ..., DISCOVERY_TARGET, DISCOVERY_LB_POLICY, FRONTEND_ORIGINS
+            - configMapRef: {name: service-endpoints}
+          env:
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+          readinessProbe:
+            httpGet: {path: /up, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+---
+# Browser entry point. Colima forwards the node port to macOS: http://localhost:30090.
+# Unlike `kubectl port-forward` (pinned to one pod), a NodePort balances over every ready gateway.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-public
+  labels: {app: gateway}
+spec:
+  type: NodePort
+  selector: {app: gateway}
+  ports:
+    - {name: http, port: 8000, targetPort: http, nodePort: 30090}
