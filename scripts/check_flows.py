@@ -50,8 +50,8 @@ def main():
     assert sender.patch('/buddy-requests/'+request['id'],json={'decision':'accepted'}).status_code==403
     deadline=time.monotonic()+25
     while time.monotonic()<deadline:
-        notifications=expect(recipient.get('/notifications'))
-        if any(row['payload']['requestId']==request['id'] for row in notifications):break
+        inbox=expect(recipient.get('/notifications'))
+        if any(row['data']['requestId']==request['id'] for row in inbox['items']):break
         time.sleep(.5)
     else:raise AssertionError('Broker notification was not delivered')
     expect(recipient.patch('/buddy-requests/'+request['id'],json={'decision':'accepted'}))

@@ -2,7 +2,9 @@
 set -eu
 cd "$(dirname "$0")/.."
 # Test-only databases; no production/demo tables are truncated.
-for service in identity profile scheduling notification; do
+# Profile and Notification are the team services; their images carry no tests, which run in
+# their own repositories (team-profile-service: npm test / test:int; team-notification-service: scripts/test.sh).
+for service in identity scheduling; do
   docker compose run --rm --no-deps -e "DATABASE_URL=postgresql://${service}:$(sed -n 's/^DB_PASSWORD=//p' .env)@postgres:5432/${service}_test" "$service" pytest -q
  done
 docker compose run --rm --no-deps -e "DATABASE_URL=postgresql://trust_safety:$(sed -n 's/^DB_PASSWORD=//p' .env)@postgres:5432/trust_safety_test" trust-safety pytest -q

@@ -14,3 +14,10 @@ if not any(line.startswith("TEAM_IDENTITY_REFRESH_SECRET=") for line in content.
     p.write_text(content.rstrip() + "\nTEAM_IDENTITY_REFRESH_SECRET=" + secrets.token_hex(32) + "\n")
     p.chmod(0o600)
     print("Added local team Identity refresh key")
+
+# Profile's photo storage (MinIO) needs its own secret.
+content = p.read_text()
+if not any(line.startswith("PROFILE_STORAGE_SECRET=") for line in content.splitlines()):
+    p.write_text(content.rstrip() + "\nPROFILE_STORAGE_SECRET=" + secrets.token_hex(32) + "\n")
+    p.chmod(0o600)
+    print("Added local Profile photo storage secret")
