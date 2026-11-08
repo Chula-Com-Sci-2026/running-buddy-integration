@@ -6,7 +6,7 @@ Runs the same stack as `compose.yaml` — gateway, seven domain services, two wo
 
 | Topic | Choice | Reason |
 |---|---|---|
-| Cluster | Dedicated Colima profile `cra-k8s` with k3s (`colima start --kubernetes`) | Already part of the macOS/Colima setup. A separate VM never touches the Compose VM (`default` profile) or its volumes. k3s uses the VM's Docker daemon, so locally built images need no registry. |
+| Cluster | Dedicated Colima profile `cra-k8s` with k3s (`colima start --kubernetes`); other local clusters work, see [Not using Colima?](#not-using-colima) | Already part of the macOS/Colima setup. A separate VM never touches the Compose VM (`default` profile) or its volumes. k3s uses the VM's Docker daemon, so locally built images need no registry. |
 | Identity | **Team Identity** (`../team-identity-service`, Express, ADR-0023 bcrypt) | Adopted for the demo on 17 Oct 2026 (Deliverable 4 plan). Same settings as `compose.team-identity.yaml`, `identity_team` database, port 5000. The Python fallback is not deployed. |
 | Discovery | Kubernetes Services + cluster DNS (CoreDNS) | No service mesh or external registry. Destinations stay configuration: `service-endpoints` ConfigMap holds the same variables as Compose. |
 | Migrations | One Job per service, run by `deploy.sh` before any Deployment | Kubernetes has no `depends_on`. Scaling a Deployment never runs a migration. All three migrators also take a PostgreSQL advisory lock and record versions, so an overlap would still be safe. |
@@ -19,6 +19,36 @@ Runs the same stack as `compose.yaml` — gateway, seven domain services, two wo
 `brew install kubectl k6 kubeconform` (k6 and kubeconform only for load tests/validation). Colima 0.9 with the `vz` VM type. The sibling repositories must be checked out next to this one, as for Compose.
 
 The VM uses 6 CPUs and 6 GiB by default (`CPUS=… MEMORY_GIB=… k8s/scripts/cluster-up.sh`). It can run while the Compose VM is up, but both share the host; stop other VMs before load tests.
+
+### Not using Colima?
+
+> [!IMPORTANT]
+> The scripts were written and tested on macOS with Colima. Only `cluster-up.sh` calls Colima. Every other script uses whatever cluster and Docker daemon `KUBE_CONTEXT` and `DOCKER_CONTEXT` name, so any local Kubernetes works if it meets these three requirements:
+>
+> 1. **Images built by `build-images.sh` are visible to the cluster.** Every manifest uses `imagePullPolicy: Never` with `cra/*:local` images, so a pod stays in `ErrImageNeverPull` if the image is not already in the node's container runtime. There is no registry.
+> 2. **A default StorageClass exists**, for the PostgreSQL, Redis and RabbitMQ PersistentVolumeClaims.
+> 3. **NodePort 30090 is reachable on `localhost`**, or you forward the gateway yourself.
+>
+> Give the cluster at least 6 CPUs and 6 GiB, as for the Colima VM.
+
+**Docker Desktop (macOS, Windows, Linux), recommended alternative.** Enable Kubernetes in Docker Desktop settings with the **kubeadm** cluster type and raise Resources to 6 CPUs / 6 GiB. With kubeadm, images you build with Docker Desktop are used by the cluster directly, a default StorageClass (`hostpath`) exists, and NodePorts are published on `localhost`. Skip `cluster-up.sh`, find the context names with `kubectl config get-contexts` and `docker context ls`, then run the other scripts with them:
+
+```sh
+export KUBE_CONTEXT=docker-desktop
+export DOCKER_CONTEXT=desktop-linux   # the Docker Desktop entry in `docker context ls`
+k8s/scripts/build-images.sh
+k8s/scripts/deploy.sh
+k8s/scripts/seed-demo.sh
+k8s/scripts/check.sh
+```
+
+Docker Desktop's **kind** cluster type does not share Docker's images; use kubeadm.
+
+**minikube, kind, k3d or another cluster.** Skip `cluster-up.sh`, set `KUBE_CONTEXT` to your cluster's context and leave `DOCKER_CONTEXT` at your normal Docker context (`DOCKER_CONTEXT=default`). After `build-images.sh`, copy each `cra/*:local` image into the cluster (`minikube image load`, `kind load docker-image` or `k3d image import`) before `deploy.sh`. These clusters do not publish NodePorts on `localhost`, so reach the gateway with `kubectl --context "$KUBE_CONTEXT" -n cra port-forward svc/gateway 30090:8000`. A port-forward sends all traffic to one gateway pod, so use it for the demo, not for the replica comparison.
+
+**Windows.** The scripts are POSIX `sh`; run them from WSL 2 or Git Bash, not PowerShell.
+
+These alternatives follow each tool's documented behavior but have not been run by the team; the measured results in this README come from the Colima setup.
 
 ## Start
 
