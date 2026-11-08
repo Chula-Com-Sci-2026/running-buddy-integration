@@ -78,6 +78,8 @@ k6 runs as a Job inside the cluster (`grafana/k6:2.3.0`, requests 1 CPU, limit 2
 
 ## Measured results
 
+> These runs were measured on 31 Oct 2026 with the **Python** Profile and Notification. Since 8 Nov 2026 the stack runs the team services instead (TypeScript Profile, FastAPI Notification), so re-run the scenarios before quoting numbers for the current deployment.
+
 All runs on 31 Oct 2026: Apple M4 (10 CPUs, 16 GiB), `cra-k8s` VM 6 vCPU / 6 GiB, k3s v1.33.3, dataset 10,004 profiles (10,000 load-test), 5,004 accounts, 201 upcoming runs, D1 targets. A second Colima VM running an unrelated stack shared the host throughout (see each `environment.txt`). Folders are under `results/`.
 
 | Run | Load | Runner search p95 | Nearby runs p95 | Cached weather p95 | Failures | Verdict |

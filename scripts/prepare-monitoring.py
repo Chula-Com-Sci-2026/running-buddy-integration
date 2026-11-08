@@ -19,7 +19,7 @@ if not re.fullmatch(r'[0-9a-f]{64}', password):
 views = {
     'identity_team': {'users': 'id,email,is_email_verified,is_phone_verified,is_locked,created_at'},
     'identity': {'accounts': 'id,email,phone_verified,created_at'},
-    'profile': {'profiles': 'id,name,pace_min,pace_max,experience,area,availability,updated_at'},
+    'profile': {'profiles': 'id,name,pace_min,pace_max,experience,area,availability,usual_distance,revision'},
     'discovery': {
         'buddy_requests': 'id,sender_id,recipient_id,status,created_at,updated_at',
         'buddy_relationships': 'id,runner_a,runner_b,created_at',
@@ -34,7 +34,7 @@ views = {
         'participant_ratings': 'id,run_id,rater_id,ratee_id,punctuality,pace_accuracy,friendliness,created_at',
         'running_records': 'id,run_id,runner_id,distance_meters,duration_seconds,occurred_at,created_at',
     },
-    'notification': {'notifications': 'id,event_id,recipient_id,type,is_read,created_at'},
+    'notification': {'notifications': 'id,event_id,recipient_id,event_type,category,read_at,occurred_at'},
 }
 
 def psql(database, sql, password_var=False):

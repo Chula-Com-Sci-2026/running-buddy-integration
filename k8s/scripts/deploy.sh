@@ -10,7 +10,7 @@ echo "==> Secrets"
 echo "==> Data stores"
 kubectl --context "$KUBE_CONTEXT" apply -f "$K8S_DIR/namespace.yaml"
 k apply -f "$K8S_DIR/service-endpoints.yaml" -f "$K8S_DIR/infra/"
-for store in postgres redis rabbitmq; do
+for store in postgres redis rabbitmq profile-storage; do
   k rollout status "statefulset/$store" --timeout=300s
 done
 

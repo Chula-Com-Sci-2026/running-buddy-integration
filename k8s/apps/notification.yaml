@@ -1,5 +1,5 @@
-# Notification API plus its RabbitMQ consumer. Extra worker replicas would be competing
-# consumers; stored notifications are deduplicated on (event_id, recipient_id).
+# Notification (team service): the inbox API plus its RabbitMQ consumer, one image. Extra worker
+# replicas would be competing consumers; stored notifications are deduplicated on (event_id, recipient_id).
 apiVersion: v1
 kind: Service
 metadata:
@@ -37,11 +37,20 @@ spec:
           ports:
             - {name: http, containerPort: 8000}
           env:
-            - name: JWT_SECRET
+            - {name: ENVIRONMENT, value: local}
+            - name: ACCESS_TOKEN_SECRET
               valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
-            - name: DB_PASSWORD
+            - {name: JWT_ISSUER, value: cant-run-alone-local}
+            - {name: JWT_AUDIENCE, value: cant-run-alone-services}
+            - {name: POSTGRES_SERVER, value: postgres}
+            - {name: POSTGRES_DB, value: notification}
+            - {name: POSTGRES_USER, value: notification}
+            - name: POSTGRES_PASSWORD
               valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
-            - {name: DATABASE_URL, value: "postgresql://notification:$(DB_PASSWORD)@postgres:5432/notification"}
+            - {name: RABBITMQ_HOST, value: rabbitmq}
+            - {name: RABBITMQ_USER, value: cra}
+            - name: RABBITMQ_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
           readinessProbe:
             httpGet: {path: /up, port: http}
             periodSeconds: 5
@@ -79,21 +88,30 @@ spec:
           resources:
             limits: {cpu: 100m, memory: 32Mi}
       containers:
-        # No HTTP port: the worker reconnects to RabbitMQ in its own loop and the kubelet
-        # restarts it if the process exits.
+        # No HTTP port: the consumer marks itself ready with a file once its queues are declared,
+        # and the kubelet restarts it if the process exits.
         - name: worker
           image: cra/notification:local
           imagePullPolicy: Never
-          command: ["python", "worker.py"]
+          command: ["python", "-m", "app.consumer"]
           env:
-            - name: JWT_SECRET
+            - {name: ENVIRONMENT, value: local}
+            - name: ACCESS_TOKEN_SECRET
               valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
-            - name: DB_PASSWORD
+            - {name: JWT_ISSUER, value: cant-run-alone-local}
+            - {name: JWT_AUDIENCE, value: cant-run-alone-services}
+            - {name: POSTGRES_SERVER, value: postgres}
+            - {name: POSTGRES_DB, value: notification}
+            - {name: POSTGRES_USER, value: notification}
+            - name: POSTGRES_PASSWORD
               valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
-            - name: BROKER_PASSWORD
+            - {name: RABBITMQ_HOST, value: rabbitmq}
+            - {name: RABBITMQ_USER, value: cra}
+            - name: RABBITMQ_PASSWORD
               valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
-            - {name: DATABASE_URL, value: "postgresql://notification:$(DB_PASSWORD)@postgres:5432/notification"}
-            - {name: AMQP_URL, value: "amqp://cra:$(BROKER_PASSWORD)@rabbitmq:5672/%2F"}
+          readinessProbe:
+            exec: {command: ["test", "-f", "/tmp/notification-consumer-ready"]}
+            periodSeconds: 5
           resources:
             requests: {cpu: 50m, memory: 64Mi}
             limits: {cpu: 500m, memory: 256Mi}

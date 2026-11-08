@@ -7,6 +7,7 @@ Runs the same stack as `compose.yaml` — gateway, seven domain services, two wo
 | Topic | Choice | Reason |
 |---|---|---|
 | Cluster | Dedicated Colima profile `cra-k8s` with k3s (`colima start --kubernetes`); other local clusters work, see [Not using Colima?](#not-using-colima) | Already part of the macOS/Colima setup. A separate VM never touches the Compose VM (`default` profile) or its volumes. k3s uses the VM's Docker daemon, so locally built images need no registry. |
+| Profile, Notification | **Team services** (`../team-profile-service`, TypeScript; `../team-notification-service`, FastAPI) | Adopted on 8 Nov 2026 as the default in Compose and Kubernetes; they implement the contracts in `running-buddy-contracts`. Same Service names and port 8000 as before, so callers are unchanged. Profile adds its photo storage (`profile-storage`, MinIO) and publishes `ProfileUpdated`. The Python versions are not deployed. |
 | Identity | **Team Identity** (`../team-identity-service`, Express, ADR-0023 bcrypt) | Adopted for the demo on 17 Oct 2026 (Deliverable 4 plan). Same settings as `compose.team-identity.yaml`, `identity_team` database, port 5000. The Python fallback is not deployed. |
 | Discovery | Kubernetes Services + cluster DNS (CoreDNS) | No service mesh or external registry. Destinations stay configuration: `service-endpoints` ConfigMap holds the same variables as Compose. |
 | Migrations | One Job per service, run by `deploy.sh` before any Deployment | Kubernetes has no `depends_on`. Scaling a Deployment never runs a migration. All three migrators also take a PostgreSQL advisory lock and record versions, so an overlap would still be safe. |
@@ -58,9 +59,11 @@ From `running-buddy-integration/`:
 k8s/scripts/cluster-up.sh      # create/resume the cra-k8s VM; restores your Docker context afterwards
 k8s/scripts/build-images.sh    # build cra/*:local into the VM (re-run after code changes, e.g. build-images.sh gateway)
 k8s/scripts/deploy.sh          # secrets -> data stores -> db-bootstrap -> migrations -> applications
-k8s/scripts/seed-demo.sh       # Ray/Mali, profiles, prepared past run (insert-only)
+k8s/scripts/seed-demo.sh       # Ray/Mali, profiles (through Profile's API), prepared past run (insert-only)
 k8s/scripts/check.sh           # existing check_flows.py + check_broker.py, run inside the cluster
 ```
+
+**A cluster deployed before 8 Nov 2026** still holds the Python Profile and Notification tables. Run `k8s/scripts/switch-to-team-profile-notification.sh` once before `deploy.sh`: it renames them to `profile_legacy` / `notification_legacy` (nothing is deleted), creates empty databases for the team migrations and removes the Python worker's broker queue and fanout `cra.dead` exchange.
 
 Every script passes `--context colima-cra-k8s` (`KUBE_CONTEXT`) and `--context colima-cra-k8s` for Docker, so your current kubectl and Docker contexts are not used or changed.
 
@@ -80,10 +83,11 @@ RabbitMQ management, when needed: `kubectl --context colima-cra-k8s -n cra port-
 | redis (AOF) | StatefulSet | `redis:6379` | `redis-cli ping` | PVC 1 Gi |
 | rabbitmq | StatefulSet | `rabbitmq:5672`, `:15672` | diagnostics ping / port check | PVC 1 Gi |
 | identity (team) + identity-worker | Deployment | `identity:5000` | HTTP `/up` (DB) | — |
-| profile | Deployment | `profile:8000` | HTTP `/up` (DB) | — |
+| profile-storage (MinIO) | StatefulSet | `profile-storage:9000`, NodePort `30091` | HTTP `/minio/health/ready` | PVC 1 Gi |
+| profile (team) | Deployment | `profile:8000` | HTTP `/ready` (DB) | — |
 | conditions | Deployment | `conditions:8000` | HTTP `/ready` (Redis) | — |
 | scheduling | Deployment | `scheduling:8000` | HTTP `/up` (DB) | — |
-| notification + notification-worker | Deployment | `notification:8000` | HTTP `/up` (DB) | — |
+| notification (team) + notification-worker | Deployment | `notification:8000` | HTTP `/up`; worker: ready file | — |
 | discovery + discovery-outbox | Deployment | `discovery:50051`, `discovery-headless:50051` | TCP (no gRPC health service exists) | — |
 | reputation | Deployment | `reputation:3000` | HTTP `/up` | — |
 | gateway | Deployment | `gateway:8000`, NodePort `30090` | HTTP `/up` | — |

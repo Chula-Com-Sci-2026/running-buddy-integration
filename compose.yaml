@@ -90,29 +90,131 @@
         "retries": 20
       }
     },
-    "profile": {
-      "build": "../profile-service",
+    "profile-storage": {
+      "image": "cgr.dev/chainguard/minio@sha256:869ca3178831d9f521ea02258a0f0d4fbc1e9f84302e707514e1f861b860865d",
+      "command": [
+        "server",
+        "/data"
+      ],
       "environment": {
-        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
-        "DATABASE_URL": "postgresql://profile:${DB_PASSWORD}@postgres:5432/profile"
+        "MINIO_ROOT_USER": "cra-profile",
+        "MINIO_ROOT_PASSWORD": "${PROFILE_STORAGE_SECRET:?Run scripts/init-env.py}"
+      },
+      "ports": [
+        "127.0.0.1:${PROFILE_PHOTO_PORT:-9000}:9000"
+      ],
+      "volumes": [
+        "profile_photos:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "mc",
+          "ready",
+          "local"
+        ],
+        "interval": "3s",
+        "timeout": "3s",
+        "retries": 20
+      }
+    },
+    "profile-storage-bucket": {
+      "image": "cgr.dev/chainguard/minio@sha256:869ca3178831d9f521ea02258a0f0d4fbc1e9f84302e707514e1f861b860865d",
+      "depends_on": {
+        "profile-storage": {
+          "condition": "service_healthy"
+        }
+      },
+      "environment": {
+        "STORAGE_SECRET": "${PROFILE_STORAGE_SECRET}"
+      },
+      "entrypoint": [
+        "sh",
+        "-c",
+        "printf '%s' '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::profile-service/*\"]}]}' > /tmp/public-read.json && mc alias set store http://profile-storage:9000 cra-profile \"$$STORAGE_SECRET\" && mc mb --ignore-existing store/profile-service && mc anonymous set-json /tmp/public-read.json store/profile-service"
+      ]
+    },
+    "profile-broker-user": {
+      "image": "rabbitmq:4.3.6-management",
+      "restart": "no",
+      "depends_on": {
+        "rabbitmq": {
+          "condition": "service_healthy"
+        }
+      },
+      "environment": {
+        "BROKER_PASSWORD": "${BROKER_PASSWORD}"
+      },
+      "entrypoint": [
+        "sh",
+        "-c",
+        "admin=\"rabbitmqadmin --host rabbitmq --username cra --password $$BROKER_PASSWORD\" && $$admin declare user --name profile --password \"$$BROKER_PASSWORD\" --tags '' && $$admin declare permissions --vhost / --username profile --configure '^cra\\.events$$' --write '^cra\\.events$$' --read '^$$'"
+      ]
+    },
+    "profile-migrate": {
+      "build": "../team-profile-service",
+      "image": "cra-team-profile:local",
+      "command": [
+        "node",
+        "dist/migrate.js"
+      ],
+      "environment": {
+        "DATABASE_URL": "postgres://profile:${DB_PASSWORD}@postgres:5432/profile"
       },
       "depends_on": {
         "postgres": {
           "condition": "service_healthy"
         }
+      }
+    },
+    "profile": {
+      "build": "../team-profile-service",
+      "image": "cra-team-profile:local",
+      "environment": {
+        "PORT": "8000",
+        "DATABASE_URL": "postgres://profile:${DB_PASSWORD}@postgres:5432/profile",
+        "ACCESS_TOKEN_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "JWT_ISSUER": "cant-run-alone-local",
+        "JWT_AUDIENCE": "cant-run-alone-services",
+        "LOG_LEVEL": "info",
+        "SHUTDOWN_DRAIN_MS": "3000",
+        "OBJECT_STORAGE_ENDPOINT": "http://profile-storage:9000",
+        "OBJECT_STORAGE_PUBLIC_ENDPOINT": "http://127.0.0.1:${PROFILE_PHOTO_PORT:-9000}",
+        "OBJECT_STORAGE_BUCKET": "profile-service",
+        "OBJECT_STORAGE_ACCESS_KEY": "cra-profile",
+        "OBJECT_STORAGE_SECRET_KEY": "${PROFILE_STORAGE_SECRET:?Run scripts/init-env.py}",
+        "EVENT_SENDER": "rabbitmq",
+        "RABBITMQ_HOST": "rabbitmq",
+        "RABBITMQ_USER": "profile",
+        "RABBITMQ_PASSWORD": "${BROKER_PASSWORD}"
       },
-      "restart": "unless-stopped",
+      "stop_grace_period": "20s",
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        },
+        "profile-migrate": {
+          "condition": "service_completed_successfully"
+        },
+        "profile-storage-bucket": {
+          "condition": "service_completed_successfully"
+        },
+        "profile-broker-user": {
+          "condition": "service_completed_successfully"
+        }
+      },
       "healthcheck": {
         "test": [
           "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+          "node",
+          "--eval",
+          "fetch('http://127.0.0.1:8000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
         ],
         "interval": "5s",
         "timeout": "4s",
         "retries": 20
-      }
+      },
+      "restart": "unless-stopped"
     },
     "conditions": {
       "build": "../run-conditions-service",
@@ -163,27 +265,114 @@
         "retries": 20
       }
     },
-    "notification": {
-      "build": "../notification-service",
+    "notification-migrate": {
+      "build": "../team-notification-service",
+      "image": "cra-team-notification:local",
+      "command": [
+        "sh",
+        "scripts/prestart.sh"
+      ],
       "environment": {
-        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
-        "DATABASE_URL": "postgresql://notification:${DB_PASSWORD}@postgres:5432/notification"
+        "ENVIRONMENT": "local",
+        "ACCESS_TOKEN_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "JWT_ISSUER": "cant-run-alone-local",
+        "JWT_AUDIENCE": "cant-run-alone-services",
+        "POSTGRES_SERVER": "postgres",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_DB": "notification",
+        "POSTGRES_USER": "notification",
+        "POSTGRES_PASSWORD": "${DB_PASSWORD}",
+        "RABBITMQ_HOST": "rabbitmq",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_USER": "cra",
+        "RABBITMQ_PASSWORD": "${BROKER_PASSWORD}"
       },
       "depends_on": {
         "postgres": {
           "condition": "service_healthy"
         }
+      }
+    },
+    "notification": {
+      "build": "../team-notification-service",
+      "image": "cra-team-notification:local",
+      "environment": {
+        "ENVIRONMENT": "local",
+        "ACCESS_TOKEN_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "JWT_ISSUER": "cant-run-alone-local",
+        "JWT_AUDIENCE": "cant-run-alone-services",
+        "POSTGRES_SERVER": "postgres",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_DB": "notification",
+        "POSTGRES_USER": "notification",
+        "POSTGRES_PASSWORD": "${DB_PASSWORD}",
+        "RABBITMQ_HOST": "rabbitmq",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_USER": "cra",
+        "RABBITMQ_PASSWORD": "${BROKER_PASSWORD}"
       },
-      "restart": "unless-stopped",
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy"
+        },
+        "notification-migrate": {
+          "condition": "service_completed_successfully"
+        }
+      },
       "healthcheck": {
         "test": [
           "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/up', timeout=3)"
+          "wget",
+          "-qO-",
+          "http://127.0.0.1:8000/up"
         ],
         "interval": "5s",
         "timeout": "4s",
+        "retries": 20
+      },
+      "restart": "unless-stopped"
+    },
+    "notification-worker": {
+      "build": "../team-notification-service",
+      "image": "cra-team-notification:local",
+      "command": [
+        "python",
+        "-m",
+        "app.consumer"
+      ],
+      "restart": "unless-stopped",
+      "environment": {
+        "ENVIRONMENT": "local",
+        "ACCESS_TOKEN_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
+        "JWT_ISSUER": "cant-run-alone-local",
+        "JWT_AUDIENCE": "cant-run-alone-services",
+        "POSTGRES_SERVER": "postgres",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_DB": "notification",
+        "POSTGRES_USER": "notification",
+        "POSTGRES_PASSWORD": "${DB_PASSWORD}",
+        "RABBITMQ_HOST": "rabbitmq",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_USER": "cra",
+        "RABBITMQ_PASSWORD": "${BROKER_PASSWORD}"
+      },
+      "depends_on": {
+        "notification-migrate": {
+          "condition": "service_completed_successfully"
+        },
+        "rabbitmq": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "test",
+          "-f",
+          "/tmp/notification-consumer-ready"
+        ],
+        "interval": "3s",
+        "timeout": "3s",
         "retries": 20
       }
     },
@@ -217,27 +406,6 @@
         "timeout": "4s",
         "retries": 20
       }
-    },
-    "notification-worker": {
-      "build": "../notification-service",
-      "command": [
-        "python",
-        "worker.py"
-      ],
-      "environment": {
-        "JWT_SECRET": "${JWT_SECRET:?Run scripts/init-env.py}",
-        "DATABASE_URL": "postgresql://notification:${DB_PASSWORD}@postgres:5432/notification",
-        "AMQP_URL": "amqp://cra:${BROKER_PASSWORD}@rabbitmq:5672/%2F"
-      },
-      "depends_on": {
-        "postgres": {
-          "condition": "service_healthy"
-        },
-        "rabbitmq": {
-          "condition": "service_healthy"
-        }
-      },
-      "restart": "unless-stopped"
     },
     "discovery": {
       "build": {
@@ -425,6 +593,7 @@
   "volumes": {
     "postgres_data": {},
     "redis_data": {},
-    "rabbitmq_data": {}
+    "rabbitmq_data": {},
+    "profile_photos": {}
   }
 }

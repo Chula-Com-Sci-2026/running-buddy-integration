@@ -1,3 +1,3 @@
-SELECT id, event_id, recipient_id, type, is_read, created_at
+SELECT id, event_id, recipient_id, event_type, category, read_at, occurred_at
 FROM demo_monitor.notifications
-ORDER BY created_at DESC LIMIT 10;
+ORDER BY occurred_at DESC LIMIT 10;

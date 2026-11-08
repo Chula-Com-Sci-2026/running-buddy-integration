@@ -13,6 +13,7 @@ resources:
   - infra/postgres.yaml
   - infra/redis.yaml
   - infra/rabbitmq.yaml
+  - infra/profile-storage.yaml
   - apps/identity.yaml
   - apps/profile.yaml
   - apps/conditions.yaml
