@@ -1,0 +1,8 @@
+scenario=baseline targets=d1 duration=300s vus_max=50 iterations=3001 http_reqs=3069 (10/s) dropped_iterations=0
+op              count    req/s   avg ms   p50 ms   p90 ms   p95 ms   p99 ms   max ms  failed%  checks%  thresholds
+runner_search      923     3.07       39       37       49       56       80      158     0.22    99.78  p(95)<2000 PASS; rate<0.01 PASS; rate>0.99 PASS
+nearby_runs       1204     4.01       38       36       46       53       69      121     0.17    99.83  p(95)<1000 PASS; rate<0.01 PASS; rate>0.99 PASS
+weather_cached     874     2.91     8.41     7.11       10       16       26       86     0.00   100.00  p(95)<300 PASS; rate<0.01 PASS; rate>0.99 PASS
+login               55     0.18     3739     3789     5953     6304     6591     6605        -        -  
+weather_cache_miss: {"count":0,"rate":0} count<=10 PASS
+started=2026-10-31T04:21:17Z finished=2026-10-31T04:26:22Z k6_exit_code=0 (0 = all thresholds passed, 99 = a threshold failed)

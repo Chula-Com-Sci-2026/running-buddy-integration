@@ -1,0 +1,1 @@
+Interrupted: the cra-k8s VM was stopped from outside at 2026-10-31 04:48:51 UTC (clean SIGINT shutdown of the Colima host agent), about 4 minutes into replicas-1. No summary was produced. Rerun with load-tests/compare-replicas.sh.

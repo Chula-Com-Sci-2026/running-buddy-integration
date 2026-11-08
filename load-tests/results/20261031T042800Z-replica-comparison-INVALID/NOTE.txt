@@ -1,0 +1,3 @@
+Invalid comparison. replicas-1 was aborted at 308 s by the weather_cache_miss guard (13 > 10): the warm-up accepted
+slots cached ~15 min earlier, which expired mid-test (warm-up bug, fixed: fresh slots only). The runs therefore have
+different durations (308 s vs 547 s) and load profiles. Kept as evidence of the provider guard and of node CPU saturation.

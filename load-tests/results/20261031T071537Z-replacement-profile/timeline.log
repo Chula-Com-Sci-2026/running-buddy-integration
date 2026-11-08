@@ -1,0 +1,8 @@
+2026-10-31T07:15:37.000Z scale profile to 2 (was 1)
+2026-10-31T07:15:40.000Z probe start: 20 req/s to gateway /api/v1/me/profile for 100s
+2026-10-31T07:15:55.000Z round 1: delete pod/profile-75b8f6fb4-zl9f6
+2026-10-31T07:16:01.000Z round 1: 2/2 ready again
+2026-10-31T07:16:11.000Z round 2: delete pod/profile-75b8f6fb4-vlsm9
+2026-10-31T07:16:19.000Z round 2: 2/2 ready again
+2026-10-31T07:26:14.000Z probe finished
+2026-10-31T07:26:14.000Z restored profile to 1 replica(s)

@@ -1,0 +1,516 @@
+scenario=smoke targets=d1 duration=14s vus_max=1 iterations=3 http_reqs=24 (1.70/s) dropped_iterations=0
+op              count    req/s   avg ms   p50 ms   p90 ms   p95 ms   p99 ms   max ms  failed%  checks%  thresholds
+runner_search        3     0.21       45       43       55       57       58       58     0.00   100.00  p(95)<2000 PASS; rate<0.01 PASS; rate>0.99 PASS
+nearby_runs          3     0.21       35       33       39       40       40       40     0.00   100.00  p(95)<1000 PASS; rate<0.01 PASS; rate>0.99 PASS
+weather_cached       3     0.21     6.26     6.00     6.69     6.77     6.84     6.86     0.00   100.00  p(95)<300 PASS; rate<0.01 PASS; rate>0.99 PASS
+login                2     0.14      247      247      253      253      254      254     0.00        -  
+weather_cache_miss: {"count":0,"rate":0} count<=10 PASS
+weather_warmup_provider_calls: {"count":6,"rate":0.42611579443984626} 
+===K6_SUMMARY_JSON_BEGIN===
+{
+ "meta": {
+  "script": "running-buddy.js",
+  "scenario": "smoke",
+  "config": {
+   "executor": "per-vu-iterations",
+   "vus": 1,
+   "iterations": 3,
+   "maxDuration": "2m"
+  },
+  "mix": {
+   "SEARCH_PCT": 30,
+   "RUNS_PCT": 40
+  },
+  "thinkSeconds": null,
+  "accounts": 5000,
+  "label": "rec-smoke"
+ },
+ "state": {
+  "isStdOutTTY": false,
+  "isStdErrTTY": false,
+  "testRunDurationMs": 14080.679661
+ },
+ "metrics": {
+  "iterations": {
+   "contains": "default",
+   "values": {
+    "count": 3,
+    "rate": 0.21305789721992313
+   },
+   "type": "counter"
+  },
+  "iteration_duration": {
+   "values": {
+    "max": 349.870663,
+    "count": 3,
+    "avg": 170.18935933333333,
+    "min": 75.948026,
+    "med": 84.749389,
+    "p(90)": 296.8464082,
+    "p(95)": 323.3585355999999,
+    "p(99)": 344.56823751999997
+   },
+   "type": "trend",
+   "contains": "time"
+  },
+  "data_sent": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 13061,
+    "rate": 927.583065196472
+   }
+  },
+  "http_req_duration{op:runner_search}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "avg": 45.443148,
+    "min": 34.563054,
+    "med": 43.313495,
+    "p(90)": 55.425015,
+    "p(95)": 56.938955,
+    "p(99)": 58.150107,
+    "max": 58.452895,
+    "count": 3
+   },
+   "thresholds": {
+    "p(95)<2000": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_tls_handshaking": {
+   "values": {
+    "min": 0,
+    "med": 0,
+    "p(90)": 0,
+    "p(95)": 0,
+    "p(99)": 0,
+    "max": 0,
+    "count": 24,
+    "avg": 0
+   },
+   "type": "trend",
+   "contains": "time"
+  },
+  "checks{op:nearby_runs}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 1,
+    "passes": 9,
+    "fails": 0
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_duration{op:nearby_runs}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 33.324932,
+    "p(90)": 38.900112,
+    "p(95)": 39.5970095,
+    "p(99)": 40.1545275,
+    "max": 40.293907,
+    "count": 3,
+    "avg": 35.39891333333333,
+    "min": 32.577901
+   },
+   "thresholds": {
+    "p(95)<1000": {
+     "ok": true
+    }
+   }
+  },
+  "vus": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "value": 1,
+    "min": 0,
+    "max": 1
+   }
+  },
+  "http_req_blocked": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(95)": 0.41437154999999953,
+    "p(99)": 2.864236359999999,
+    "max": 3.57509,
+    "count": 24,
+    "avg": 0.17264316666666665,
+    "min": 0.001791,
+    "med": 0.0028545000000000003,
+    "p(90)": 0.014356000000000006
+   }
+  },
+  "http_req_receiving": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(95)": 0.23617844999999993,
+    "p(99)": 0.28109544,
+    "max": 0.291945,
+    "count": 24,
+    "avg": 0.10201158333333334,
+    "min": 0.02917,
+    "med": 0.083633,
+    "p(90)": 0.18045060000000002
+   }
+  },
+  "http_req_failed": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 24
+   }
+  },
+  "http_req_waiting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(95)": 2278.5531386,
+    "p(99)": 2497.336792,
+    "max": 2552.731947,
+    "count": 24,
+    "avg": 585.7823521250001,
+    "min": 5.736384,
+    "med": 36.70423,
+    "p(90)": 2089.3669907
+   }
+  },
+  "data_received": {
+   "values": {
+    "rate": 48939.54103001449,
+    "count": 689102
+   },
+   "type": "counter",
+   "contains": "data"
+  },
+  "checks{op:weather_cached}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 1,
+    "passes": 9,
+    "fails": 0
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_connecting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 0,
+    "med": 0,
+    "p(90)": 0,
+    "p(95)": 0.1625786499999998,
+    "p(99)": 0.22444522,
+    "max": 0.234355,
+    "count": 24,
+    "avg": 0.017734333333333335
+   }
+  },
+  "http_req_duration{expected_response:true}": {
+   "values": {
+    "avg": 585.9137954583333,
+    "min": 5.794931,
+    "med": 36.866683,
+    "p(90)": 2089.638379,
+    "p(95)": 2278.7266664,
+    "p(99)": 2497.46921294,
+    "max": 2552.858876,
+    "count": 24
+   },
+   "type": "trend",
+   "contains": "time"
+  },
+  "checks": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 1,
+    "passes": 32,
+    "fails": 0
+   }
+  },
+  "http_req_failed{op:runner_search}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 3
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_sending": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "avg": 0.029431749999999996,
+    "min": 0.006751,
+    "med": 0.011084,
+    "p(90)": 0.08260390000000004,
+    "p(95)": 0.11416164999999999,
+    "p(99)": 0.18665284,
+    "max": 0.207604,
+    "count": 24
+   }
+  },
+  "vus_max": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "value": 1,
+    "min": 1,
+    "max": 1
+   }
+  },
+  "http_req_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "count": 24,
+    "avg": 585.9137954583333,
+    "min": 5.794931,
+    "med": 36.866683,
+    "p(90)": 2089.638379,
+    "p(95)": 2278.7266664,
+    "p(99)": 2497.46921294,
+    "max": 2552.858876
+   }
+  },
+  "weather_warmup_provider_calls": {
+   "values": {
+    "count": 6,
+    "rate": 0.42611579443984626
+   },
+   "type": "counter",
+   "contains": "default"
+  },
+  "http_req_failed{op:weather_cached}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "fails": 3,
+    "rate": 0,
+    "passes": 0
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": true
+    }
+   }
+  },
+  "login_failed": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 2
+   }
+  },
+  "http_req_failed{op:nearby_runs}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 3
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": true
+    }
+   }
+  },
+  "weather_cache_miss": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "count": 0,
+    "rate": 0
+   },
+   "thresholds": {
+    "count<=10": {
+     "ok": true
+    }
+   }
+  },
+  "login_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 246.768075,
+    "p(90)": 252.7002358,
+    "p(95)": 253.4417559,
+    "p(99)": 254.03497198,
+    "max": 254.183276,
+    "count": 2,
+    "avg": 246.768075,
+    "min": 239.352874
+   }
+  },
+  "checks{op:runner_search}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 1,
+    "passes": 12,
+    "fails": 0
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_duration{op:weather_cached}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "count": 3,
+    "avg": 6.264461333333333,
+    "min": 5.93629,
+    "med": 6.000213,
+    "p(90)": 6.6855474,
+    "p(95)": 6.771214199999999,
+    "p(99)": 6.83974764,
+    "max": 6.856881
+   },
+   "thresholds": {
+    "p(95)<300": {
+     "ok": true
+    }
+   }
+  },
+  "http_reqs": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "count": 24,
+    "rate": 1.704463177759385
+   }
+  }
+ },
+ "root_group": {
+  "groups": [
+   {
+    "name": "setup",
+    "path": "::setup",
+    "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+    "groups": [],
+    "checks": [
+      {
+       "name": "login 200 with access token",
+       "path": "::setup::login 200 with access token",
+       "id": "9ce423c7cd3bd25e3b070e3316f2daa4",
+       "passes": 1,
+       "fails": 0
+      }
+     ]
+   }
+  ],
+  "checks": [
+   {
+    "name": "login 200 with access token",
+    "path": "::login 200 with access token",
+    "id": "0400a3e77556d05fcd200d7ee5364d5a",
+    "passes": 1,
+    "fails": 0
+   },
+   {
+    "path": "::search 200",
+    "id": "f1430541508c538fdf29bbd85cfe5de5",
+    "passes": 3,
+    "fails": 0,
+    "name": "search 200"
+   },
+   {
+    "name": "search returns compatible runners",
+    "path": "::search returns compatible runners",
+    "id": "d84746dd90436758f43d8842cfd21a0a",
+    "passes": 3,
+    "fails": 0
+   },
+   {
+    "passes": 3,
+    "fails": 0,
+    "name": "search filters experience",
+    "path": "::search filters experience",
+    "id": "915f25693403a7588d31d3f0ed70d430"
+   },
+   {
+    "path": "::search hides coordinates",
+    "id": "0d5b021971eb3cb2aa7e216f5c5037db",
+    "passes": 3,
+    "fails": 0,
+    "name": "search hides coordinates"
+   },
+   {
+    "name": "runs 200",
+    "path": "::runs 200",
+    "id": "9d8d2fca720f2b30cb7067b67368ff62",
+    "passes": 3,
+    "fails": 0
+   },
+   {
+    "fails": 0,
+    "name": "runs lists upcoming runs",
+    "path": "::runs lists upcoming runs",
+    "id": "e88d7cf7cb81cd2266bb47e64cd1e774",
+    "passes": 3
+   },
+   {
+    "id": "0c55f22d3079c02b2175b26fae530d2c",
+    "passes": 3,
+    "fails": 0,
+    "name": "unjoined runs show approximate pins only",
+    "path": "::unjoined runs show approximate pins only"
+   },
+   {
+    "name": "weather 200",
+    "path": "::weather 200",
+    "id": "e4e1501ebd950658a533ceed2beba78f",
+    "passes": 3,
+    "fails": 0
+   },
+   {
+    "name": "weather served from cache",
+    "path": "::weather served from cache",
+    "id": "484c1e9d4db196a554e2b3b95f8dc70f",
+    "passes": 3,
+    "fails": 0
+   },
+   {
+    "fails": 0,
+    "name": "weather has live provider data",
+    "path": "::weather has live provider data",
+    "id": "5445855dc9a83cff0e8b8825f1664e91",
+    "passes": 3
+   }
+  ],
+  "name": "",
+  "path": "",
+  "id": "d41d8cd98f00b204e9800998ecf8427e"
+ }
+}
+===K6_SUMMARY_JSON_END===

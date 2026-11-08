@@ -8,5 +8,4 @@ __pycache__/
 .DS_Store
 contracts/persistence-proof.json
 
-# raw load-test output stays local
-load-tests/results/
+# load-test results are committed as evidence; only bytecode under load-tests stays out

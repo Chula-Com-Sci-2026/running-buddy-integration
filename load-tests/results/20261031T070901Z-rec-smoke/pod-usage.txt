@@ -1,0 +1,32 @@
+## 07:09:02
+NODE colima-cra-k8s   554m   9%    2254Mi   38%   
+conditions-68db5849fb-cqx98            4m    55Mi    
+discovery-998767b85-mrzzx              3m    158Mi   
+discovery-outbox-6574fddfcf-v979k      2m    112Mi   
+gateway-759fc4d99b-mt4vx               13m   104Mi   
+identity-598669d889-p4spp              2m    92Mi    
+identity-worker-864b455fdf-k4n6r       1m    20Mi    
+notification-5977b9545b-6r8dw          5m    38Mi    
+notification-worker-67c75f4767-nmw9d   1m    37Mi    
+postgres-0                             8m    94Mi    
+profile-75b8f6fb4-zl9f6                12m   47Mi    
+rabbitmq-0                             58m   177Mi   
+redis-0                                9m    12Mi    
+reputation-77464c9c59-6jz7z            3m    203Mi   
+scheduling-659c4996c-hpdpx             11m   42Mi    
+## 07:09:17
+NODE colima-cra-k8s   457m   7%    2311Mi   39%   
+conditions-68db5849fb-cqx98            6m    57Mi    
+discovery-998767b85-mrzzx              2m    158Mi   
+discovery-outbox-6574fddfcf-v979k      2m    112Mi   
+gateway-759fc4d99b-mt4vx               7m    104Mi   
+identity-598669d889-p4spp              17m   92Mi    
+identity-worker-864b455fdf-k4n6r       0m    20Mi    
+notification-5977b9545b-6r8dw          4m    38Mi    
+notification-worker-67c75f4767-nmw9d   1m    37Mi    
+postgres-0                             10m   96Mi    
+profile-75b8f6fb4-zl9f6                3m    47Mi    
+rabbitmq-0                             55m   177Mi   
+redis-0                                5m    12Mi    
+reputation-77464c9c59-6jz7z            2m    203Mi   
+scheduling-659c4996c-hpdpx             5m    43Mi    

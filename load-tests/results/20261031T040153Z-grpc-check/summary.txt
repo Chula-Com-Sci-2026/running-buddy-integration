@@ -1,0 +1,21 @@
+== clusterip: DISCOVERY_TARGET=discovery:50051 DISCOVERY_LB_POLICY=<unset>
+-- distribution, 30 s at 10 req/s, two ready Discovery pods:
+discovery-6886c654c4-b9n8q: 0 calls (0%)
+discovery-6886c654c4-g27g6: 300 calls (100%)
+2026-10-31T04:02:57Z delete pod/discovery-6886c654c4-g27g6
+2026-10-31T04:03:06Z replacement ready (2/2)
+-- during/after replacement (75 s probe):
+discovery-6886c654c4-b9n8q: 0 calls (0%)
+discovery-6886c654c4-px9ms: 507 calls (100%)  <- replacement pod
+probe: sent=750 ok=749 failed=1 p95=15ms max=2049ms failures=[('2026-10-31T04:03:04.706+00:00', 503)]
+== headless: DISCOVERY_TARGET=dns:///discovery-headless:50051 DISCOVERY_LB_POLICY=round_robin
+-- distribution, 30 s at 10 req/s, two ready Discovery pods:
+discovery-6886c654c4-b9n8q: 150 calls (50%)
+discovery-6886c654c4-px9ms: 150 calls (50%)
+2026-10-31T04:04:58Z delete pod/discovery-6886c654c4-px9ms
+2026-10-31T04:05:07Z replacement ready (2/2)
+-- during/after replacement (75 s probe):
+discovery-6886c654c4-b9n8q: 375 calls (60%)
+discovery-6886c654c4-qndp9: 253 calls (40%)  <- replacement pod
+probe: sent=750 ok=749 failed=1 p95=10ms max=2046ms failures=[('2026-10-31T04:05:05.738+00:00', 503)]
+== restoring manifest configuration
