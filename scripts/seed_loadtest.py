@@ -89,7 +89,9 @@ def seed():
         cursor.executemany('INSERT INTO users(id,email,phone_number,password_hash,is_phone_verified) VALUES (%s,%s,%s,%s,true) ON CONFLICT DO NOTHING',
                            [(profile_id(i), email(i), f'+669{i:08d}', password_hash) for i in range(ACCOUNTS)])
     with database('profile') as connection, connection.cursor() as cursor:
-        cursor.executemany('INSERT INTO profiles(id,name,bio,pace_min,pace_max,experience,area,availability,latitude,longitude) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
+        # Team Profile schema: revision 1 for a fresh row. Fixtures bypass Profile's outbox on purpose,
+        # so 10,000 ProfileUpdated events are not queued.
+        cursor.executemany('INSERT INTO profiles(id,name,bio,pace_min,pace_max,experience,area,availability,latitude,longitude,revision) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1) ON CONFLICT DO NOTHING',
                            list(profiles(rng)))
     with database('scheduling') as connection, connection.cursor() as cursor:
         for run, participants in run_rows(rng, now):

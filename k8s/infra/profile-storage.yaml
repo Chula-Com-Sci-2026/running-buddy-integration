@@ -1,0 +1,70 @@
+# Profile's photo storage (S3-compatible MinIO), as in Compose. The image is Chainguard's MinIO,
+# pinned by digest: MinIO's own images are no longer publicly pullable.
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-storage
+  labels: {app: profile-storage}
+spec:
+  selector: {app: profile-storage}
+  ports:
+    - {name: s3, port: 9000, targetPort: 9000}
+---
+# Browsers load photos straight from storage, so the bucket is published on a node port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-storage-public
+  labels: {app: profile-storage}
+spec:
+  type: NodePort
+  selector: {app: profile-storage}
+  ports:
+    - {name: s3, port: 9000, targetPort: 9000, nodePort: 30091}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: profile-storage
+  labels: {app: profile-storage}
+spec:
+  serviceName: profile-storage
+  replicas: 1
+  selector:
+    matchLabels: {app: profile-storage}
+  template:
+    metadata:
+      labels: {app: profile-storage}
+    spec:
+      containers:
+        - name: minio
+          image: cgr.dev/chainguard/minio@sha256:869ca3178831d9f521ea02258a0f0d4fbc1e9f84302e707514e1f861b860865d
+          args: ["server", "/data"]
+          env:
+            - {name: MINIO_ROOT_USER, value: cra-profile}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: PROFILE_STORAGE_SECRET}}
+          ports:
+            - {name: s3, containerPort: 9000}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+          readinessProbe:
+            httpGet: {path: /minio/health/ready, port: s3}
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /minio/health/live, port: s3}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests: {storage: 1Gi}

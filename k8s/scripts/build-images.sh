@@ -18,10 +18,11 @@ for name in ${*:-$all}; do
   case "$name" in
     # Team Identity (PR branch adopted for Deliverable 4); see k8s/README.md "Identity choice".
     identity) build identity team-identity-service Dockerfile ;;
-    profile) build profile profile-service Dockerfile ;;
+    # Team services from their own repositories (Profile: TypeScript; Notification: FastAPI).
+    profile) build profile team-profile-service Dockerfile ;;
     conditions) build conditions run-conditions-service Dockerfile ;;
     scheduling) build scheduling run-scheduling-service Dockerfile ;;
-    notification) build notification notification-service Dockerfile ;;
+    notification) build notification team-notification-service Dockerfile ;;
     gateway) build gateway api-gateway Dockerfile ;;
     # Same development images Compose uses; the production Dockerfiles need Rails master keys
     # and extra cache/queue databases that this stack does not provision.

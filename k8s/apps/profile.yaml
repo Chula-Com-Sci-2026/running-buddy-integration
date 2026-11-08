@@ -1,4 +1,5 @@
-# Profile owns runner profiles; Discovery calls it by DNS name for runner search.
+# Profile (team TypeScript service) owns runner profiles; Discovery calls it by DNS name for runner
+# search. It publishes ProfileUpdated through its outbox and keeps photos in profile-storage.
 apiVersion: v1
 kind: Service
 metadata:
@@ -24,9 +25,9 @@ spec:
     spec:
       terminationGracePeriodSeconds: 30
       initContainers:
-        - name: wait-for-postgres
+        - name: wait-for-dependencies
           image: postgres:16-alpine
-          command: ["sh", "-c", "until pg_isready -h postgres -q; do sleep 2; done"]
+          command: ["sh", "-c", "until pg_isready -h postgres -q && nc -z rabbitmq 5672 && nc -z profile-storage 9000; do sleep 2; done"]
           resources:
             limits: {cpu: 100m, memory: 32Mi}
       containers:
@@ -36,14 +37,31 @@ spec:
           ports:
             - {name: http, containerPort: 8000}
           env:
-            - name: JWT_SECRET
+            - {name: PORT, value: "8000"}
+            - name: ACCESS_TOKEN_SECRET
               valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - {name: JWT_ISSUER, value: cant-run-alone-local}
+            - {name: JWT_AUDIENCE, value: cant-run-alone-services}
             - name: DB_PASSWORD
               valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
-            - {name: DATABASE_URL, value: "postgresql://profile:$(DB_PASSWORD)@postgres:5432/profile"}
-          # /up runs SELECT 1, so an unready pod leaves the Service endpoints until its database works.
+            - {name: DATABASE_URL, value: "postgres://profile:$(DB_PASSWORD)@postgres:5432/profile"}
+            - {name: LOG_LEVEL, value: info}
+            - {name: SHUTDOWN_DRAIN_MS, value: "3000"}
+            - {name: OBJECT_STORAGE_ENDPOINT, value: "http://profile-storage:9000"}
+            # Browsers load photos through the storage node port (k8s/infra/profile-storage.yaml).
+            - {name: OBJECT_STORAGE_PUBLIC_ENDPOINT, value: "http://127.0.0.1:30091"}
+            - {name: OBJECT_STORAGE_BUCKET, value: profile-service}
+            - {name: OBJECT_STORAGE_ACCESS_KEY, value: cra-profile}
+            - name: OBJECT_STORAGE_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: PROFILE_STORAGE_SECRET}}
+            - {name: EVENT_SENDER, value: rabbitmq}
+            - {name: RABBITMQ_HOST, value: rabbitmq}
+            - {name: RABBITMQ_USER, value: profile}
+            - name: RABBITMQ_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
+          # /ready checks the database, so an unready pod leaves the Service endpoints until it works.
           readinessProbe:
-            httpGet: {path: /up, port: http}
+            httpGet: {path: /ready, port: http}
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
@@ -52,7 +70,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 6
-          # Gives kube-proxy time to drop this endpoint before uvicorn stops accepting connections.
+          # Gives kube-proxy time to drop this endpoint before the server stops accepting connections.
           lifecycle:
             preStop:
               exec: {command: ["sleep", "5"]}

@@ -3,6 +3,8 @@
 # only that service's database credentials. Every migrator also serializes on a PostgreSQL
 # advisory lock and records applied versions, so a re-run or an accidental overlap is a no-op:
 #   Python services: common.migrate()    -> pg_advisory_xact_lock + schema_migrations
+#   team Profile:    dist/migrate.js      -> Drizzle migrator, records applied migrations
+#   team Notification: scripts/prestart.sh -> alembic upgrade head
 #   team Identity:   scripts/migrate.js  -> pg_advisory_xact_lock + identity_schema_migrations
 #   Rails services:  bin/rails db:migrate -> ActiveRecord advisory lock + schema_migrations
 apiVersion: batch/v1
@@ -41,11 +43,64 @@ spec:
         - name: migrate
           image: cra/profile:local
           imagePullPolicy: Never
-          command: ["python", "-c", "from common import migrate; migrate(); print('profile migrated')"]
+          command: ["node", "dist/migrate.js"]
           env:
             - name: DB_PASSWORD
               valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
-            - {name: DATABASE_URL, value: "postgresql://profile:$(DB_PASSWORD)@postgres:5432/profile"}
+            - {name: DATABASE_URL, value: "postgres://profile:$(DB_PASSWORD)@postgres:5432/profile"}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: setup-profile-storage
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        # Creates Profile's bucket: anyone may read a photo by its address, nobody may list it.
+        - name: bucket
+          image: cgr.dev/chainguard/minio@sha256:869ca3178831d9f521ea02258a0f0d4fbc1e9f84302e707514e1f861b860865d
+          command:
+            - sh
+            - -c
+            - >-
+              printf '%s' '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::profile-service/*"]}]}' > /tmp/public-read.json &&
+              mc alias set store http://profile-storage:9000 cra-profile "$STORAGE_SECRET" &&
+              mc mb --ignore-existing store/profile-service &&
+              mc anonymous set-json /tmp/public-read.json store/profile-service
+          env:
+            - name: STORAGE_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: PROFILE_STORAGE_SECRET}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: setup-profile-broker-user
+  labels: {app.kubernetes.io/component: migration}
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        # Profile publishes as its own broker user, allowed to configure and write cra.events only.
+        - name: broker-user
+          image: rabbitmq:4.3.6-management
+          command:
+            - sh
+            - -c
+            - >-
+              admin="rabbitmqadmin --host rabbitmq --username cra --password $BROKER_PASSWORD" &&
+              $admin declare user --name profile --password "$BROKER_PASSWORD" --tags '' &&
+              $admin declare permissions --vhost / --username profile --configure '^cra\.events$' --write '^cra\.events$' --read '^$'
+          env:
+            - name: BROKER_PASSWORD
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: BROKER_PASSWORD}}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -83,11 +138,16 @@ spec:
         - name: migrate
           image: cra/notification:local
           imagePullPolicy: Never
-          command: ["python", "-c", "from common import migrate; migrate(); print('notification migrated')"]
+          command: ["sh", "scripts/prestart.sh"]
           env:
-            - name: DB_PASSWORD
+            - {name: ENVIRONMENT, value: local}
+            - name: ACCESS_TOKEN_SECRET
+              valueFrom: {secretKeyRef: {name: cra-secrets, key: JWT_SECRET}}
+            - {name: POSTGRES_SERVER, value: postgres}
+            - {name: POSTGRES_DB, value: notification}
+            - {name: POSTGRES_USER, value: notification}
+            - name: POSTGRES_PASSWORD
               valueFrom: {secretKeyRef: {name: cra-secrets, key: DB_PASSWORD}}
-            - {name: DATABASE_URL, value: "postgresql://notification:$(DB_PASSWORD)@postgres:5432/notification"}
 ---
 apiVersion: batch/v1
 kind: Job
