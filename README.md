@@ -14,7 +14,7 @@ docker compose up -d --build
 docker compose run --rm tools python seed.py
 ```
 
-Wait for `docker compose ps` to show the API/database health checks ready before seeding. On a fresh startup the Rails migrations and Python SQL migrations run automatically. `scripts/init-databases.sh` creates service-owned demo and test databases on the first PostgreSQL initialization. If using an older volume from before test databases were added, create the missing `*_test` databases as the PostgreSQL operator; do not broaden application-role permissions.
+Wait for `docker compose ps` to show the API/database health checks ready before seeding. On a fresh startup the Rails migrations, the Python SQL migrations and the team Profile (Drizzle) and Notification (Alembic) migrations run automatically. `scripts/init-databases.sh` creates service-owned demo and test databases on the first PostgreSQL initialization. If using an older volume from before test databases were added, create the missing `*_test` databases as the PostgreSQL operator; do not broaden application-role permissions.
 
 Start the frontend separately:
 
@@ -26,6 +26,28 @@ npm run dev -- --host 127.0.0.1
 Open http://localhost:5173/login. Frontend mock mode is off by default; `.env.example` documents the gateway URL. Seed credentials: `ray@example.com` / `runner123` and `mali@example.com` / `runner123`. Seeded phone verification is a development fixture, not evidence of SMS delivery. The UI registration flow uses a random expiring OTP printed by `docker compose logs identity` through the explicitly labeled local console adapter.
 
 Gateway: http://localhost:8088. RabbitMQ management: http://localhost:15678 (user `cra`, password from ignored local `.env`). The database and internal service ports are not exposed to the host. No secrets are committed. PostgreSQL and Redis use named volumes; Redis uses AOF.
+
+## Team Profile and Notification services
+
+Profile and Notification run the team's own implementations, checked out as sibling folders:
+
+```sh
+git clone https://github.com/Chula-Com-Sci-2026/profile-service.git ../team-profile-service
+git clone https://github.com/Chula-Com-Sci-2026/notification-service.git ../team-notification-service
+```
+
+They keep the Compose names `profile` and `notification` on port 8000, so the gateway, Discovery and the checks reach them unchanged. Their HTTP and event contracts are the ones in [running-buddy-contracts](https://github.com/Chula-Com-Sci-2026/running-buddy-contracts) (`profile.openapi.json`, `profile-events.schema.json`, `notification.openapi.json`). Profile also starts `profile-storage` (MinIO, published on `127.0.0.1:9000` for photo links; set `PROFILE_PHOTO_PORT` if 9000 is taken), creates its bucket and its own broker user `profile`, and publishes `ProfileUpdated` through its outbox. Nothing consumes `ProfileUpdated` yet, so those events wait in Profile's outbox until a queue is bound. MinIO's own images are no longer publicly pullable, so the stack uses Chainguard's MinIO pinned by digest.
+
+**Volumes created before 8 Nov 2026** still hold the Python Profile and Notification tables. Run once, then start as usual:
+
+```sh
+python3 scripts/init-env.py                          # adds PROFILE_STORAGE_SECRET to .env
+./scripts/switch-to-team-profile-notification.sh     # renames the old databases to *_legacy; deletes nothing
+docker compose up -d --build
+docker compose run --rm tools python seed.py         # Ray and Mali's profiles, through Profile's API
+```
+
+The Python `profile-service` and `notification-service` folders are no longer used by the stack.
 
 ## Business flows
 
@@ -55,7 +77,7 @@ Show these database queries in the recording after their corresponding UI action
 ```sh
 docker compose exec postgres psql -U discovery -d discovery -c 'SELECT id,sender_id,recipient_id,status FROM buddy_requests ORDER BY created_at DESC LIMIT 5;'
 docker compose exec postgres psql -U discovery -d discovery -c 'SELECT id,event_type,published_at FROM outbox_events ORDER BY created_at DESC LIMIT 5;'
-docker compose exec postgres psql -U notification -d notification -c 'SELECT event_id,recipient_id,type,is_read FROM notifications ORDER BY created_at DESC LIMIT 5;'
+docker compose exec postgres psql -U notification -d notification -c 'SELECT event_id,recipient_id,event_type,read_at FROM notifications ORDER BY occurred_at DESC LIMIT 5;'
 docker compose exec postgres psql -U scheduling -d scheduling -c 'SELECT id,title,status,starts_at FROM runs ORDER BY created_at DESC LIMIT 5;'
 docker compose exec postgres psql -U reputation -d reputation -c 'SELECT run_id,runner_id,distance_meters,duration_seconds FROM running_records ORDER BY created_at DESC LIMIT 5;'
 docker compose exec redis redis-cli --scan --pattern 'forecast:*'
@@ -82,7 +104,7 @@ Set `MODERATOR_IDS` in `.env` to the account UUIDs allowed to moderate. Without 
 
 ## Scope and boundaries
 
-Search is delegated by Discovery to Profile through its API; there is no replicated candidate read model yet. Profile public reads omit private coordinates. Phone verification is distinct from a Trust & Safety badge. Admin, moderation, reports, suspension, written reviews, reminders, public-history privacy settings and invite-only runs are deferred. Ended-run attendance opens on confirmation access; no scheduled end-run event consumer is claimed. Scheduling owns completion; Reputation persists confirmation after Scheduling accepts it. A retry reconciles a partially completed cross-service confirmation.
+Search is delegated by Discovery to Profile's temporary search endpoint; Discovery does not yet consume `ProfileUpdated` into its own read model. Profile public reads omit private coordinates. Phone verification is distinct from a Trust & Safety badge. Admin, moderation, reports, suspension, written reviews, reminders, public-history privacy settings and invite-only runs are deferred. Ended-run attendance opens on confirmation access; no scheduled end-run event consumer is claimed. Scheduling owns completion; Reputation persists confirmation after Scheduling accepts it. A retry reconciles a partially completed cross-service confirmation.
 
 Health checks, structured API errors and tests are included. Coverage percentage has not been measured; do not claim compliance with the historical 70% target. HS256 trust is limited to the local demo; see ADR-0010. Each repository has local feature-branch commits; nothing is pushed by these instructions.
 

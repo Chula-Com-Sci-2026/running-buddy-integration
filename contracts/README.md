@@ -6,16 +6,17 @@ This directory contains contracts for every implemented backend service and the 
 |---|---|---|
 | Identity (Python fallback) | [identity.openapi.json](identity.openapi.json) | Exported FastAPI snapshot; register, verify OTP, login, refresh, logout |
 | Identity (team Node.js / Express) | [team-identity.openapi.json](team-identity.openapi.json) | Derived from mounted routes, controllers and session code; includes email/phone verification and password reset |
-| Profile | [profile.openapi.json](profile.openapi.json) | Exported FastAPI snapshot; own profile, public profiles and runner listing |
+| Profile (team TypeScript) | [profile.openapi.json](profile.openapi.json) | Copy from running-buddy-contracts (the service's `docs/openapi.yaml`); own profile, visibility, photo uploads, public profiles and a temporary runner listing |
 | Run Conditions | [conditions.openapi.json](conditions.openapi.json) | Exported FastAPI snapshot; weather/air-quality conditions and readiness |
 | Run Scheduling | [scheduling.openapi.json](scheduling.openapi.json) | Exported FastAPI snapshot; runs, membership and internal attendance confirmation |
-| Notification | [notification.openapi.json](notification.openapi.json) | Exported FastAPI snapshot; list notifications and mark read |
+| Notification (team FastAPI) | [notification.openapi.json](notification.openapi.json) | Copy from running-buddy-contracts, exported from the running service; inbox, mark read, preferences |
 | Buddy Discovery (gRPC) | [buddy_discovery.proto](buddy_discovery.proto) | Copy of the service's versioned protobuf; seven RPCs for search, buddies and requests |
 | Buddy Discovery (HTTP) | [discovery.openapi.json](discovery.openapi.json) | Derived from Rails routes; health endpoint only |
 | Reputation | [reputation.openapi.yaml](reputation.openapi.yaml) | Existing handwritten contract; records, attendance, ratings and history |
 | Trust & Safety | [trust-safety.openapi.json](trust-safety.openapi.json) | Exported FastAPI snapshot; badges, reports, moderation and suspensions |
 | API Gateway / BFF | [gateway.openapi.json](gateway.openapi.json) | Exported FastAPI snapshot; see routing matrix below for forwarded APIs |
 | Buddy broker events | [events.md](events.md), [buddy-events.schema.json](buddy-events.schema.json) | Discovery publisher to Notification consumer |
+| Profile broker events | [events.md](events.md), [profile-events.schema.json](profile-events.schema.json) | Profile publisher (`ProfileUpdated`); no consumer yet |
 | Identity email jobs | [events.md](events.md), [identity-email-job.schema.json](identity-email-job.schema.json) | Team Identity publisher to its email worker |
 
 The frontend consumes the gateway and is not a separate backend API. PostgreSQL, Redis, RabbitMQ and monitoring tools are infrastructure, not domain service APIs.
@@ -38,13 +39,13 @@ All protected HTTP requests carry `Authorization: Bearer <JWT>`. gRPC carries th
 
 - `POST /api/v1/auth/{register,verify-otp,login,refresh,logout}` -> Identity; request/response schemas in Identity contract.
 - `GET /api/v1/runners` -> Discovery `SearchRunners`, whose JSON payload contains public Profile runner views. Filters: `radiusKm`, `experience`, `pace`, `availability`, `verifiedOnly`. In the local implementation a nonempty pace filter other than `Any` requests overlap with the caller's saved pace range. Trust badges are deferred, so `verifiedOnly=true` returns no approved badges.
-- `GET /api/v1/runners/{uuid}`, `GET/PUT /api/v1/me/profile` -> Profile.
+- `GET /api/v1/runners/{uuid}`, `GET/PUT /api/v1/me/profile`, `PUT /api/v1/me/profile/visibility`, `POST /api/v1/me/profile/photo-uploads` and `PUT/DELETE /api/v1/me/profile/photo` -> Profile.
 - `GET/POST /api/v1/buddy-requests` -> Discovery list/send; send body `{ "runnerId": "UUID" }`. Gateway derives sender from token. Optional old frontend `note` is not persisted by the current protobuf contract.
 - `PATCH /api/v1/buddy-requests/{uuid}` -> Discovery response; body `{ "decision": "accepted" }` or `rejected`. `DELETE` cancels a sender-owned pending request.
 - `GET /api/v1/buddies` -> Discovery; returns array of buddy UUIDs.
 - `/api/v1/runs` and run membership operations -> Scheduling.
 - `GET /api/v1/conditions` -> Run Conditions.
-- `/api/v1/notifications` and `PATCH /api/v1/notifications/{uuid}/read` -> Notification.
+- `/api/v1/notifications`, `PATCH /api/v1/notifications/{uuid}/read` and `GET/PATCH /api/v1/notifications/preferences` -> Notification.
 - `/api/v1/verification/*`, `/api/v1/reports/*` and `/api/v1/moderation/*` -> Trust & Safety, which also decides moderator permission.
 - `/api/v1/running_records`, `/api/v1/me/history`, `POST /api/v1/runs/{uuid}/attendance`, `POST /api/v1/runs/{uuid}/ratings`, and `GET /api/v1/runners/{uuid}/rating-summary` -> Reputation.
 - `GET /api/v1/dashboard` aggregates current profile, cumulative record distance and the next scheduled run, which may be null. The total is cumulative history, not a weekly metric.
