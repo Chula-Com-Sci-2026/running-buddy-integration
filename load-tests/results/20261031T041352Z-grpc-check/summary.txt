@@ -1,0 +1,17 @@
+== headless: DISCOVERY_TARGET=dns:///discovery-headless:50051 DISCOVERY_LB_POLICY=round_robin
+-- distribution, 30 s at 10 req/s, two ready Discovery pods:
+discovery-998767b85-mrzzx: 150 calls (50%)
+discovery-998767b85-xkjjb: 150 calls (50%)
+2026-10-31T04:14:57Z delete pod/discovery-998767b85-xkjjb
+2026-10-31T04:15:05Z replacement ready (2/2)
+-- during/after replacement (75 s probe):
+discovery-998767b85-9r28s: 224 calls (36%)  <- replacement pod
+discovery-998767b85-mrzzx: 403 calls (64%)
+probe: sent=750 ok=749 failed=1 p95=16ms max=2040ms failures=[('2026-10-31T04:15:04.346+00:00', 503)]
+2026-10-31T04:16:20Z scale discovery 1 -> 2
+2026-10-31T04:16:24Z second pod ready
+-- scale-out during a 60 s probe:
+discovery-998767b85-mrzzx: 439 calls (73%)
+discovery-998767b85-vgxzx: 161 calls (27%)  <- added pod
+probe: sent=600 ok=600 failed=0
+== restoring manifest configuration

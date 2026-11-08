@@ -1,0 +1,1 @@
+{"target": "http://gateway:8000/api/v1/buddy-requests", "rate": 10, "durationSeconds": 75, "sent": 750, "ok": 749, "failed": 1, "successRate": 0.99867, "p50Ms": 5, "p95Ms": 15, "maxMs": 2070, "failures": [{"at": "2026-10-31T04:11:04.316+00:00", "second": 24, "status": 503, "ms": 2070}]}

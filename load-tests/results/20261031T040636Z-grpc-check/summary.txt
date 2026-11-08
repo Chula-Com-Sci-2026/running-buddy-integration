@@ -1,0 +1,33 @@
+== clusterip: DISCOVERY_TARGET=discovery:50051 DISCOVERY_LB_POLICY=<unset>
+-- distribution, 30 s at 10 req/s, two ready Discovery pods:
+discovery-6886c654c4-b9n8q: 300 calls (100%)
+discovery-6886c654c4-ssxsz: 0 calls (0%)
+2026-10-31T04:07:40Z delete pod/discovery-6886c654c4-b9n8q
+2026-10-31T04:07:48Z replacement ready (2/2)
+-- during/after replacement (75 s probe):
+discovery-6886c654c4-b4zxn: 0 calls (0%)  <- replacement pod
+discovery-6886c654c4-ssxsz: 507 calls (100%)
+probe: sent=750 ok=749 failed=1 p95=13ms max=2049ms failures=[('2026-10-31T04:07:47.101+00:00', 503)]
+2026-10-31T04:09:01Z scale discovery 1 -> 2
+2026-10-31T04:09:05Z second pod ready
+-- scale-out during a 60 s probe:
+discovery-6886c654c4-qhvc9: 0 calls (0%)  <- added pod
+discovery-6886c654c4-ssxsz: 600 calls (100%)
+probe: sent=600 ok=600 failed=0
+== headless: DISCOVERY_TARGET=dns:///discovery-headless:50051 DISCOVERY_LB_POLICY=round_robin
+-- distribution, 30 s at 10 req/s, two ready Discovery pods:
+discovery-6886c654c4-qhvc9: 149 calls (50%)
+discovery-6886c654c4-ssxsz: 151 calls (50%)
+2026-10-31T04:10:57Z delete pod/discovery-6886c654c4-ssxsz
+2026-10-31T04:11:05Z replacement ready (2/2)
+-- during/after replacement (75 s probe):
+discovery-6886c654c4-fp25w: 253 calls (40%)  <- replacement pod
+discovery-6886c654c4-qhvc9: 375 calls (60%)
+probe: sent=750 ok=749 failed=1 p95=15ms max=2070ms failures=[('2026-10-31T04:11:04.316+00:00', 503)]
+2026-10-31T04:12:20Z scale discovery 1 -> 2
+2026-10-31T04:12:24Z second pod ready
+-- scale-out during a 60 s probe:
+discovery-6886c654c4-fdcrb: 0 calls (0%)  <- added pod
+discovery-6886c654c4-qhvc9: 600 calls (100%)
+probe: sent=600 ok=600 failed=0
+== restoring manifest configuration

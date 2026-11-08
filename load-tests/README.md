@@ -64,7 +64,9 @@ Mix per iteration: 30 % runner search, 40 % nearby runs, 30 % cached weather (`M
 
 ## Result artifacts
 
-Each run writes `results/<UTC time>-<label>/`:
+Each run writes `results/<UTC time>-<label>/`. The 31 Oct 2026 runs are committed as evidence; folders whose name ends in `-INVALID` or `-INTERRUPTED` carry a `NOTE.txt` and must not be quoted as results.
+
+Each folder contains:
 
 - `summary.txt` — per-operation count, req/s, avg/p50/p90/p95/p99/max, failed %, checks %, each threshold's PASS/FAIL, k6 exit code (99 = a threshold failed);
 - `summary.json` — full k6 end-of-test summary (all metrics and thresholds);

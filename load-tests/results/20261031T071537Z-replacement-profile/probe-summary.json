@@ -1,0 +1,1 @@
+{"target": "http://gateway:8000/api/v1/me/profile", "rate": 20, "durationSeconds": 100, "sent": 2000, "ok": 2000, "failed": 0, "successRate": 1.0, "p50Ms": 11, "p95Ms": 43, "maxMs": 983, "failures": []}

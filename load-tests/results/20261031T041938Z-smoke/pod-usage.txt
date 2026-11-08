@@ -1,0 +1,15 @@
+## 04:19:39
+conditions-68db5849fb-cqx98            4m    48Mi    
+discovery-998767b85-mrzzx              2m    131Mi   
+discovery-outbox-6574fddfcf-v979k      4m    114Mi   
+gateway-7cf687847f-qvfqf               4m    56Mi    
+identity-598669d889-p4spp              2m    37Mi    
+identity-worker-864b455fdf-k4n6r       1m    16Mi    
+notification-5977b9545b-6r8dw          5m    38Mi    
+notification-worker-67c75f4767-nmw9d   1m    36Mi    
+postgres-0                             8m    183Mi   
+profile-75b8f6fb4-zl9f6                4m    50Mi    
+rabbitmq-0                             60m   125Mi   
+redis-0                                7m    4Mi     
+reputation-77464c9c59-6jz7z            2m    137Mi   
+scheduling-659c4996c-hpdpx             5m    43Mi    

@@ -1,0 +1,2 @@
+10.42.0.33 ready=true pod=profile-75b8f6fb4-gfgt6
+10.42.0.34 ready=true pod=profile-75b8f6fb4-f4fq5

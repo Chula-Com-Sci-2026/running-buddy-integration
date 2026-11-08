@@ -1,0 +1,2 @@
+Invalid run: the script then chose slots 3-5 days ahead; 3 of 5 were beyond the CAMS
+air-quality horizon and returned 503 (not a latency result). Fixed to 1-4 days; see the later weather-cold run.

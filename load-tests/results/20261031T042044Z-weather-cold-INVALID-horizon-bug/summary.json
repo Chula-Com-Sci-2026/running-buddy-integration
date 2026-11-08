@@ -1,0 +1,283 @@
+{
+ "meta": {
+  "script": "weather-cold.js",
+  "scenario": "cold",
+  "checks": 5,
+  "label": "weather-cold"
+ },
+ "state": {
+  "isStdOutTTY": false,
+  "isStdErrTTY": false,
+  "testRunDurationMs": 18168.218008
+ },
+ "metrics": {
+  "vus": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "value": 1,
+    "min": 1,
+    "max": 1
+   }
+  },
+  "http_req_failed": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0.5454545454545454,
+    "passes": 6,
+    "fails": 5
+   }
+  },
+  "http_req_receiving": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(95)": 0.39066649999999997,
+    "max": 0.393541,
+    "count": 11,
+    "avg": 0.20953409090909092,
+    "min": 0.089875,
+    "med": 0.166834,
+    "p(90)": 0.387792
+   }
+  },
+  "checks": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0.45454545454545453,
+    "passes": 5,
+    "fails": 6
+   }
+  },
+  "http_reqs": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "count": 11,
+    "rate": 0.6054528845457698
+   }
+  },
+  "http_req_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "max": 1641.615542,
+    "count": 11,
+    "avg": 1195.1359551818182,
+    "min": 11.965583,
+    "med": 1588.368834,
+    "p(90)": 1640.325418,
+    "p(95)": 1640.97048
+   }
+  },
+  "weather_cache_miss_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 1610.064543,
+    "p(90)": 1634.2732429999999,
+    "p(95)": 1637.2993305,
+    "max": 1640.325418,
+    "count": 2,
+    "avg": 1610.064543,
+    "min": 1579.803668
+   },
+   "thresholds": {
+    "max<3000": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_tls_handshaking": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "count": 11,
+    "avg": 0,
+    "min": 0,
+    "med": 0,
+    "p(90)": 0,
+    "p(95)": 0,
+    "max": 0
+   }
+  },
+  "data_received": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 4792,
+    "rate": 263.7572929766663
+   }
+  },
+  "http_req_duration{expected_response:true}": {
+   "values": {
+    "med": 258.038792,
+    "p(90)": 1616.116718,
+    "p(95)": 1628.2210679999998,
+    "max": 1640.325418,
+    "count": 5,
+    "avg": 701.0465006000001,
+    "min": 11.965583
+   },
+   "type": "trend",
+   "contains": "time"
+  },
+  "http_req_connecting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "avg": 0.024920454545454548,
+    "min": 0,
+    "med": 0,
+    "p(90)": 0.133166,
+    "p(95)": 0.1370625,
+    "max": 0.140959,
+    "count": 11
+   }
+  },
+  "http_req_waiting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 11.844708,
+    "med": 1587.842793,
+    "p(90)": 1640.032792,
+    "p(95)": 1640.690834,
+    "max": 1641.348876,
+    "count": 11,
+    "avg": 1194.861364090909
+   }
+  },
+  "login_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 258.038792,
+    "med": 258.038792,
+    "p(90)": 258.038792,
+    "p(95)": 258.038792,
+    "max": 258.038792,
+    "count": 1,
+    "avg": 258.038792
+   }
+  },
+  "data_sent": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 6134,
+    "rate": 337.6225448912502
+   }
+  },
+  "checks{op:weather_cold}": {
+   "values": {
+    "rate": 0.4,
+    "passes": 4,
+    "fails": 6
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": false
+    }
+   },
+   "type": "rate",
+   "contains": "default"
+  },
+  "http_req_blocked": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 0.003209,
+    "med": 0.014166,
+    "p(90)": 0.1845,
+    "p(95)": 0.6415834999999996,
+    "max": 1.098667,
+    "count": 11,
+    "avg": 0.1277726363636364
+   }
+  },
+  "http_req_sending": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(95)": 0.133854,
+    "max": 0.135208,
+    "count": 11,
+    "avg": 0.065057,
+    "min": 0.021333,
+    "med": 0.055209,
+    "p(90)": 0.1325
+   }
+  },
+  "iteration_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "count": 5,
+    "avg": 3581.3803598,
+    "min": 2600.247668,
+    "med": 4212.480668,
+    "p(90)": 4221.853585,
+    "p(95)": 4224.88921,
+    "max": 4227.924835
+   }
+  },
+  "iterations": {
+   "values": {
+    "count": 5,
+    "rate": 0.27520585661171354
+   },
+   "type": "counter",
+   "contains": "default"
+  },
+  "vus_max": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "value": 1,
+    "min": 1,
+    "max": 1
+   }
+  }
+ },
+ "root_group": {
+  "name": "",
+  "path": "",
+  "id": "d41d8cd98f00b204e9800998ecf8427e",
+  "groups": [
+   {
+    "checks": [
+     {
+      "name": "login 200 with access token",
+      "path": "::setup::login 200 with access token",
+      "id": "9ce423c7cd3bd25e3b070e3316f2daa4",
+      "passes": 1,
+      "fails": 0
+     }
+    ],
+    "name": "setup",
+    "path": "::setup",
+    "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+    "groups": []
+   }
+  ],
+  "checks": [
+   {
+    "fails": 3,
+    "name": "cold weather 200 from provider",
+    "path": "::cold weather 200 from provider",
+    "id": "804857e905749f59b394d0b5d59ae810",
+    "passes": 2
+   },
+   {
+    "name": "repeat is a cache hit",
+    "path": "::repeat is a cache hit",
+    "id": "11bffd4e66adf654d75922fbc5ed1a51",
+    "passes": 2,
+    "fails": 3
+   }
+  ]
+ }
+}

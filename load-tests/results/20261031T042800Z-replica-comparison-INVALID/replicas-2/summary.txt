@@ -1,0 +1,9 @@
+scenario=ramp targets=d1 duration=547s vus_max=500 iterations=25026 http_reqs=25540 (47/s) dropped_iterations=0
+op              count    req/s   avg ms   p50 ms   p90 ms   p95 ms   p99 ms   max ms  failed%  checks%  thresholds
+runner_search     7387       14     2354      282    10031    10241    11087    13805    34.67    65.33  p(95)<2000 FAIL; rate<0.01 FAIL; rate>0.99 FAIL
+nearby_runs      10020       18     7406     2410    25021    25678    32111    45140     8.64    91.36  p(95)<1000 FAIL; rate<0.01 FAIL; rate>0.99 FAIL
+weather_cached    7545       14      291       51      808     1594     3386     5806     0.00   100.00  p(95)<300 FAIL; rate<0.01 PASS; rate>0.99 PASS
+login              575     1.05     2613     1085     6852     9995    11732    13819    12.87        -  
+weather_cache_miss: {"count":0,"rate":0} count<=10 PASS
+weather_warmup_provider_calls: {"count":2,"rate":0.0036552575133956228} 
+started=2026-10-31T04:34:31Z finished=2026-10-31T04:43:43Z k6_exit_code=99 (0 = all thresholds passed, 99 = a threshold failed)

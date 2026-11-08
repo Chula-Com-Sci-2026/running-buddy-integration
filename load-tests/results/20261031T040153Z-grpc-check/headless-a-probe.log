@@ -1,0 +1,33 @@
+==> job.batch/tool-cwxbb: python availability_probe.py
+probe start 2026-10-31T04:04:04.438+00:00 target=http://gateway:8000/api/v1/buddy-requests rate=10/s duration=30s
+t+000s 2026-10-31T04:04:06.341+00:00 sent=10 ok=10 failed=0 p50=9ms max=41ms codes={'200': 10}
+t+001s 2026-10-31T04:04:07.339+00:00 sent=10 ok=10 failed=0 p50=4ms max=16ms codes={'200': 10}
+t+002s 2026-10-31T04:04:08.338+00:00 sent=10 ok=10 failed=0 p50=4ms max=12ms codes={'200': 10}
+t+003s 2026-10-31T04:04:09.338+00:00 sent=10 ok=10 failed=0 p50=10ms max=14ms codes={'200': 10}
+t+004s 2026-10-31T04:04:10.340+00:00 sent=10 ok=10 failed=0 p50=5ms max=16ms codes={'200': 10}
+t+005s 2026-10-31T04:04:11.338+00:00 sent=10 ok=10 failed=0 p50=8ms max=13ms codes={'200': 10}
+t+006s 2026-10-31T04:04:12.338+00:00 sent=10 ok=10 failed=0 p50=6ms max=14ms codes={'200': 10}
+t+007s 2026-10-31T04:04:13.338+00:00 sent=10 ok=10 failed=0 p50=8ms max=18ms codes={'200': 10}
+t+008s 2026-10-31T04:04:14.339+00:00 sent=10 ok=10 failed=0 p50=7ms max=17ms codes={'200': 10}
+t+009s 2026-10-31T04:04:15.338+00:00 sent=10 ok=10 failed=0 p50=7ms max=18ms codes={'200': 10}
+t+010s 2026-10-31T04:04:16.338+00:00 sent=10 ok=10 failed=0 p50=13ms max=17ms codes={'200': 10}
+t+011s 2026-10-31T04:04:17.338+00:00 sent=10 ok=10 failed=0 p50=13ms max=15ms codes={'200': 10}
+t+012s 2026-10-31T04:04:18.338+00:00 sent=10 ok=10 failed=0 p50=4ms max=8ms codes={'200': 10}
+t+013s 2026-10-31T04:04:19.338+00:00 sent=10 ok=10 failed=0 p50=6ms max=18ms codes={'200': 10}
+t+014s 2026-10-31T04:04:20.343+00:00 sent=10 ok=10 failed=0 p50=6ms max=13ms codes={'200': 10}
+t+015s 2026-10-31T04:04:21.338+00:00 sent=10 ok=10 failed=0 p50=12ms max=15ms codes={'200': 10}
+t+016s 2026-10-31T04:04:22.338+00:00 sent=10 ok=10 failed=0 p50=11ms max=14ms codes={'200': 10}
+t+017s 2026-10-31T04:04:23.341+00:00 sent=10 ok=10 failed=0 p50=11ms max=14ms codes={'200': 10}
+t+018s 2026-10-31T04:04:24.339+00:00 sent=10 ok=10 failed=0 p50=10ms max=30ms codes={'200': 10}
+t+019s 2026-10-31T04:04:25.338+00:00 sent=10 ok=10 failed=0 p50=12ms max=20ms codes={'200': 10}
+t+020s 2026-10-31T04:04:26.339+00:00 sent=10 ok=10 failed=0 p50=13ms max=26ms codes={'200': 10}
+t+021s 2026-10-31T04:04:27.338+00:00 sent=10 ok=10 failed=0 p50=9ms max=15ms codes={'200': 10}
+t+022s 2026-10-31T04:04:28.338+00:00 sent=10 ok=10 failed=0 p50=4ms max=16ms codes={'200': 10}
+t+023s 2026-10-31T04:04:29.338+00:00 sent=10 ok=10 failed=0 p50=5ms max=12ms codes={'200': 10}
+t+024s 2026-10-31T04:04:30.339+00:00 sent=10 ok=10 failed=0 p50=4ms max=8ms codes={'200': 10}
+t+025s 2026-10-31T04:04:31.338+00:00 sent=10 ok=10 failed=0 p50=6ms max=20ms codes={'200': 10}
+t+026s 2026-10-31T04:04:32.338+00:00 sent=10 ok=10 failed=0 p50=4ms max=15ms codes={'200': 10}
+t+027s 2026-10-31T04:04:33.338+00:00 sent=10 ok=10 failed=0 p50=8ms max=15ms codes={'200': 10}
+t+028s 2026-10-31T04:04:34.340+00:00 sent=10 ok=10 failed=0 p50=11ms max=47ms codes={'200': 10}
+t+029s 2026-10-31T04:04:34.557+00:00 sent=10 ok=10 failed=0 p50=263ms max=576ms codes={'200': 10}
+PROBE_SUMMARY {"target": "http://gateway:8000/api/v1/buddy-requests", "rate": 10, "durationSeconds": 30, "sent": 300, "ok": 300, "failed": 0, "successRate": 1.0, "p50Ms": 7, "p95Ms": 20, "maxMs": 576, "failures": []}

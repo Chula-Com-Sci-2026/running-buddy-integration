@@ -1,0 +1,3 @@
+NAME                      READY   STATUS    RESTARTS      AGE     IP           NODE             NOMINATED NODE   READINESS GATES
+profile-75b8f6fb4-vlsm9   1/1     Running   0             2s      10.42.0.26   colima-cra-k8s   <none>           <none>
+profile-75b8f6fb4-zl9f6   1/1     Running   2 (51m ago)   3h16m   10.42.0.18   colima-cra-k8s   <none>           <none>
