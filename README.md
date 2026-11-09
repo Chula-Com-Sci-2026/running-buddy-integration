@@ -44,7 +44,7 @@ They keep the Compose names `profile` and `notification` on port 8000, so the ga
 python3 scripts/init-env.py                          # adds PROFILE_STORAGE_SECRET to .env
 ./scripts/switch-to-team-profile-notification.sh     # renames the old databases to *_legacy; deletes nothing
 docker compose up -d --build
-docker compose run --rm tools python seed.py         # Ray, Mali, Narin and Pim's profiles, through Profile's API
+docker compose run --rm tools python seed.py         # Ray, Mali, Narin and Pim's profiles, a past run and three upcoming runs
 ```
 
 The Python `profile-service` and `notification-service` folders are no longer used by the stack.
@@ -156,7 +156,7 @@ To return to the preserved Python implementation and database:
 ./scripts/restore-local-identity.sh
 ```
 
-Use the override on subsequent operations while testing the PR branch: `docker compose -f compose.yaml -f compose.team-identity.yaml ...`. Using only the base Compose file selects the Python configuration. Team registration now supports the existing frontend contract, so no frontend rewrite or token-validation weakening is needed. Fresh sessions are required after switching implementations; old refresh cookies belong to the other database.
+Use the override on subsequent operations: add `COMPOSE_FILE=compose.yaml:compose.team-identity.yaml` to `.env` so every `docker compose` command and `scripts/uat-tunnel.sh` keep the team Identity, or pass `-f compose.yaml -f compose.team-identity.yaml` each time. Remove that line when returning to the Python fallback. Using only the base Compose file selects the Python configuration. Team registration now supports the existing frontend contract, so no frontend rewrite or token-validation weakening is needed. Fresh sessions are required after switching implementations; old refresh cookies belong to the other database.
 
 
 ## Video database viewer

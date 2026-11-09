@@ -15,6 +15,11 @@ RUNNER_B='22222222-2222-4222-8222-222222222222'
 RUNNER_C='44444444-4444-4444-8444-444444444444'
 RUNNER_D='55555555-5555-4555-8555-555555555555'
 PAST_RUN='33333333-3333-4333-8333-333333333333'
+# (id, organizer, title, meeting point, latitude, longitude, days ahead, ICT hour, ICT minute, km, pace, limit)
+UPCOMING_RUNS=[('66666666-6666-4666-8666-666666666661',RUNNER_B,'Sunset social 5K','Lumphini Park Clock Tower',13.7317,100.5415,1,18,30,5,'6:00–6:30',8),
+               ('66666666-6666-4666-8666-666666666662',RUNNER_C,'Benjakitti easy laps','Benjakitti Park main entrance',13.7290,100.5580,2,6,30,6,'6:00–6:30',6),
+               ('66666666-6666-4666-8666-666666666663',RUNNER_A,'Weekend long run','Lumphini Park Gate 1',13.7300,100.5410,4,7,0,10,'6:30–7:00',10)]
+ICT=timezone(timedelta(hours=7))
 
 def database(name):
     user="identity" if name.startswith("identity_team") else name
@@ -43,6 +48,14 @@ def main():
         connection.execute('INSERT INTO runs(id,organizer_id,title,meeting_point,latitude,longitude,starts_at,ends_at,distance_km,pace,participant_limit,weather) VALUES (%s,%s,%s,%s,13.730,100.541,%s,%s,5,%s,5,%s) ON CONFLICT(id) DO NOTHING',(PAST_RUN,RUNNER_A,'Prepared past run — attendance demo','Lumphini Park Gate 1',starts,starts+timedelta(hours=1),'6–7',Jsonb(weather)))
         for subject in (RUNNER_A,RUNNER_B):
             connection.execute('INSERT INTO participants(run_id,runner_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(PAST_RUN,subject))
-    print('Seeded Ray and Mali (password: runner123), profiles for Ray, Mali, Narin and Pim, and a prepared past run. Existing data preserved.')
+        # Re-seeding moves these forward again, so the demo always has runs to browse, join and leave.
+        today=datetime.now(ICT).replace(second=0,microsecond=0)
+        for run_id,organizer,title,place,lat,lng,days,hour,minute,km,pace,limit in UPCOMING_RUNS:
+            start=(today+timedelta(days=days)).replace(hour=hour,minute=minute)
+            forecast={'temperature':29,'humidity':65,'rainChance':20,'pm25':15,'level':'great','label':'Demo forecast','updatedAt':today.isoformat(),'stale':True,'provider':'seed fixture'}
+            connection.execute('''INSERT INTO runs(id,organizer_id,title,meeting_point,latitude,longitude,starts_at,ends_at,distance_km,pace,participant_limit,weather) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT(id) DO UPDATE SET starts_at=EXCLUDED.starts_at,ends_at=EXCLUDED.ends_at,weather=EXCLUDED.weather''',(run_id,organizer,title,place,lat,lng,start,start+timedelta(hours=1),km,pace,limit,Jsonb(forecast)))
+            connection.execute('INSERT INTO participants(run_id,runner_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(run_id,organizer))
+    print('Seeded Ray and Mali (password: runner123), profiles for Ray, Mali, Narin and Pim, a prepared past run and three upcoming runs. Existing data preserved.')
 
 if __name__=='__main__':main()
