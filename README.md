@@ -44,7 +44,7 @@ They keep the Compose names `profile` and `notification` on port 8000, so the ga
 python3 scripts/init-env.py                          # adds PROFILE_STORAGE_SECRET to .env
 ./scripts/switch-to-team-profile-notification.sh     # renames the old databases to *_legacy; deletes nothing
 docker compose up -d --build
-docker compose run --rm tools python seed.py         # Ray and Mali's profiles, through Profile's API
+docker compose run --rm tools python seed.py         # Ray, Mali, Narin and Pim's profiles, through Profile's API
 ```
 
 The Python `profile-service` and `notification-service` folders are no longer used by the stack.
