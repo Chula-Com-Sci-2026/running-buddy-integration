@@ -9,3 +9,6 @@ __pycache__/
 contracts/persistence-proof.json
 
 # load-test results are committed as evidence; only bytecode under load-tests stays out
+
+# UAT tunnel state (scripts/uat-tunnel.sh)
+.uat/

@@ -179,7 +179,7 @@
         "LOG_LEVEL": "info",
         "SHUTDOWN_DRAIN_MS": "3000",
         "OBJECT_STORAGE_ENDPOINT": "http://profile-storage:9000",
-        "OBJECT_STORAGE_PUBLIC_ENDPOINT": "http://127.0.0.1:${PROFILE_PHOTO_PORT:-9000}",
+        "OBJECT_STORAGE_PUBLIC_ENDPOINT": "${PROFILE_PHOTO_PUBLIC_URL:-http://127.0.0.1:${PROFILE_PHOTO_PORT:-9000}}",
         "OBJECT_STORAGE_BUCKET": "profile-service",
         "OBJECT_STORAGE_ACCESS_KEY": "cra-profile",
         "OBJECT_STORAGE_SECRET_KEY": "${PROFILE_STORAGE_SECRET:?Run scripts/init-env.py}",

@@ -49,6 +49,21 @@ docker compose run --rm tools python seed.py         # Ray, Mali, Narin and Pim'
 
 The Python `profile-service` and `notification-service` folders are no longer used by the stack.
 
+## Share the stack for UAT (Cloudflare tunnel)
+
+With the stack running, `scripts/uat-tunnel.sh start` builds the frontend, serves it with `vite preview`, opens a Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` link. Everything goes through that one link: the page, `/api` (gateway) and `/profile-service` (photo storage), and Profile is restarted so its photo upload links use it. Needs `cloudflared` (`brew install cloudflared`); no Cloudflare account.
+
+```bash
+scripts/uat-tunnel.sh start    # prints the link to share
+scripts/uat-tunnel.sh otp      # sign-up OTP codes from Identity's log (SMS is not wired up)
+scripts/uat-tunnel.sh status
+scripts/uat-tunnel.sh stop     # close the link; Profile's photo links go back to localhost
+```
+
+- The link changes on every `start` and is public while open; share it only with testers and stop it afterwards.
+- Testers' sign-ups and data land in the demo database. Reset afterwards if needed.
+- Running `docker compose up` while the tunnel is open recreates Profile with localhost photo links; run `stop` and `start` again.
+
 ## Business flows
 
 1. Log in, create/update a profile, discover a compatible runner, send a buddy request. Log in as the recipient, open Activity, receive the broker notification and accept the request.
