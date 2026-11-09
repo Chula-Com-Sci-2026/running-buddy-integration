@@ -1,5 +1,9 @@
 #!/bin/sh
-# Shares the running Compose stack for a UAT session through a Cloudflare quick tunnel.
+# Shares the running Compose stack for a UAT session through a Cloudflare tunnel.
+#
+# With UAT_TUNNEL and UAT_HOSTNAME in .env (a named tunnel already routed to that hostname, see the
+# README) the link is fixed, e.g. https://uat.example.com. Without them it opens an account-less quick
+# tunnel whose https://….trycloudflare.com link changes on every start.
 #
 #   scripts/uat-tunnel.sh start    build the frontend, serve it, open the tunnel, print the link
 #   scripts/uat-tunnel.sh status   show the link and whether everything is up
@@ -9,9 +13,13 @@
 # One public URL carries everything: `vite preview` serves the production build and forwards /api to
 # the gateway and /profile-service to photo storage (see the frontend's vite.config.ts). Profile is
 # restarted with that URL as its public storage address so signed photo uploads work on testers'
-# devices. The link changes every time the tunnel starts. Needs cloudflared and a running stack.
+# devices. Needs cloudflared and a running stack.
 set -eu
 cd "$(dirname "$0")/.."
+# Read only these two keys from .env, so the rest of it never lands in this shell.
+env_value() { [ -f .env ] && sed -n "s/^$1=//p" .env | tail -1 || true; }
+tunnel_name=${UAT_TUNNEL:-$(env_value UAT_TUNNEL)}
+hostname=${UAT_HOSTNAME:-$(env_value UAT_HOSTNAME)}
 frontend=../cant-run-alone-frontend
 state="$(pwd)/.uat"
 port=4173
@@ -31,26 +39,41 @@ start() {
 
   echo "Building the frontend..."
   (cd "$frontend" && npm run build >/dev/null)
-  (cd "$frontend" && nohup npx vite preview --host 127.0.0.1 --port "$port" --strictPort >"$state/preview.log" 2>&1 & echo $! >"$state/preview.pid")
+  # The fixed hostname is allowed through Vite's own environment hook, so it stays out of vite.config.ts.
+  # exec makes the background subshell become the server, so the saved PID is the server's and no
+  # shell is left holding this script's output open.
+  (cd "$frontend" && exec env __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS="$hostname" nohup npx vite preview --host 127.0.0.1 --port "$port" --strictPort </dev/null >"$state/preview.log" 2>&1) &
+  echo $! >"$state/preview.pid"
 
   echo "Opening the tunnel..."
   # An empty config of its own: a named tunnel in ~/.cloudflared/config.yml would otherwise lend this
   # quick tunnel its credentials, and Cloudflare would then answer 404 for the trycloudflare link.
+  # The same empty config keeps a named run from picking up another tunnel's ingress rules.
   : >"$state/cloudflared.yml"
-  nohup cloudflared --config "$state/cloudflared.yml" tunnel --no-autoupdate --url "http://127.0.0.1:$port" >"$state/tunnel.log" 2>&1 &
-  echo $! >"$state/tunnel.pid"
-  url=""
-  for _ in $(seq 1 30); do
-    url=$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$state/tunnel.log" | head -1 || true)
-    [ -n "$url" ] && break
-    sleep 1
-  done
-  [ -n "$url" ] || { echo "No tunnel URL after 30 s; see $state/tunnel.log" >&2; stop; exit 1; }
+  if [ -n "$tunnel_name" ] && [ -n "$hostname" ]; then
+    nohup cloudflared --config "$state/cloudflared.yml" tunnel --no-autoupdate run --url "http://127.0.0.1:$port" "$tunnel_name" </dev/null >"$state/tunnel.log" 2>&1 &
+    echo $! >"$state/tunnel.pid"
+    url="https://$hostname"
+  else
+    nohup cloudflared --config "$state/cloudflared.yml" tunnel --no-autoupdate --url "http://127.0.0.1:$port" </dev/null >"$state/tunnel.log" 2>&1 &
+    echo $! >"$state/tunnel.pid"
+    url=""
+    for _ in $(seq 1 30); do
+      url=$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$state/tunnel.log" | head -1 || true)
+      [ -n "$url" ] && break
+      sleep 1
+    done
+    [ -n "$url" ] || { echo "No tunnel URL after 30 s; see $state/tunnel.log" >&2; stop; exit 1; }
+  fi
   # The link answers only once the edge connection is registered and the name resolves.
+  # Ready once Cloudflare's edge has the connection. Probing the link from here instead would cache
+  # a not-found DNS answer for a quick tunnel's brand-new name on this Mac.
+  ready=""
   for _ in $(seq 1 30); do
-    curl -s -o /dev/null -w '%{http_code}' "$url/" | grep -qx 200 && break
+    if grep -q 'Registered tunnel connection' "$state/tunnel.log"; then ready=1; break; fi
     sleep 2
   done
+  [ -n "$ready" ] || { echo "The tunnel did not connect within 60 s; see $state/tunnel.log" >&2; stop; exit 1; }
   echo "$url" >"$state/url"
 
   echo "Pointing Profile's photo links at the tunnel..."

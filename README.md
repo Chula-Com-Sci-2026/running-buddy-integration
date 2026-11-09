@@ -60,7 +60,14 @@ scripts/uat-tunnel.sh status
 scripts/uat-tunnel.sh stop     # close the link; Profile's photo links go back to localhost
 ```
 
-- The link changes on every `start` and is public while open; share it only with testers and stop it afterwards.
+- **Fixed link on your own domain (optional).** With a domain on Cloudflare, create a named tunnel once and point a hostname at it, then put both names in `.env`; `start` then serves `https://<hostname>` instead of a random link:
+
+  ```bash
+  cloudflared tunnel create cant-run-alone
+  cloudflared tunnel route dns cant-run-alone uat.example.com
+  printf 'UAT_TUNNEL=cant-run-alone\nUAT_HOSTNAME=uat.example.com\n' >> .env
+  ```
+- A quick-tunnel link changes on every `start`. Either way the link is public while open; share it only with testers and stop it afterwards.
 - Testers' sign-ups and data land in the demo database. Reset afterwards if needed.
 - Running `docker compose up` while the tunnel is open recreates Profile with localhost photo links; run `stop` and `start` again.
 
