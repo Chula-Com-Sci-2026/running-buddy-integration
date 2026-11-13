@@ -1,0 +1,530 @@
+{
+ "meta": {
+  "script": "running-buddy.js",
+  "scenario": "ramp",
+  "config": {
+   "executor": "ramping-vus",
+   "startVUs": 0,
+   "stages": [
+    {
+     "duration": "1m",
+     "target": 20
+    },
+    {
+     "duration": "2m",
+     "target": 100
+    },
+    {
+     "duration": "2m",
+     "target": 200
+    },
+    {
+     "duration": "3m",
+     "target": 200
+    },
+    {
+     "duration": "1m",
+     "target": 0
+    }
+   ],
+   "gracefulRampDown": "30s"
+  },
+  "mix": {
+   "SEARCH_PCT": 30,
+   "RUNS_PCT": 40
+  },
+  "thinkSeconds": [
+   1,
+   5
+  ],
+  "accounts": 5000,
+  "label": "replicas-1"
+ },
+ "state": {
+  "isStdOutTTY": false,
+  "isStdErrTTY": false,
+  "testRunDurationMs": 555005.431193
+ },
+ "metrics": {
+  "vus_max": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "min": 200,
+    "max": 200,
+    "value": 200
+   }
+  },
+  "http_req_receiving": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "avg": 0.715343336105752,
+    "min": 0.006374,
+    "med": 0.086249,
+    "p(90)": 0.2776870000000001,
+    "p(95)": 0.527077799999999,
+    "p(99)": 6.787054599999999,
+    "max": 261.024299,
+    "count": 18155
+   }
+  },
+  "http_reqs": {
+   "contains": "default",
+   "values": {
+    "count": 18155,
+    "rate": 32.71139160021427
+   },
+   "type": "counter"
+  },
+  "iteration_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "max": 8678.486554,
+    "count": 17936,
+    "avg": 3796.9254513583983,
+    "min": 1008.078737,
+    "med": 3799.490229,
+    "p(90)": 5897.203520000001,
+    "p(95)": 6533.252310749999,
+    "p(99)": 7287.6243232
+   }
+  },
+  "http_req_connecting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 0,
+    "p(90)": 0,
+    "p(95)": 0,
+    "p(99)": 0.07481871999999994,
+    "max": 28.533843,
+    "count": 18155,
+    "avg": 0.0037405386945744967,
+    "min": 0
+   }
+  },
+  "data_sent": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 9965805,
+    "rate": 17956.22968693877
+   }
+  },
+  "http_req_waiting": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 155.285628,
+    "p(90)": 2325.358906,
+    "p(95)": 2635.224770599999,
+    "p(99)": 3169.18497318,
+    "max": 4101.690492,
+    "count": 18155,
+    "avg": 790.8939468609227,
+    "min": 0.749236
+   }
+  },
+  "http_req_duration{op:runner_search}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(99)": 2904.37542954,
+    "max": 3617.371486,
+    "count": 5382,
+    "avg": 1242.1264090139384,
+    "min": 0.766528,
+    "med": 1478.2986125,
+    "p(90)": 2386.2282288,
+    "p(95)": 2559.4002051499997
+   },
+   "thresholds": {
+    "p(95)<2000": {
+     "ok": false
+    }
+   }
+  },
+  "http_req_failed{op:runner_search}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0.06800445930880714,
+    "passes": 366,
+    "fails": 5016
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": false
+    }
+   }
+  },
+  "http_req_failed{op:weather_cached}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 5316
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": true
+    }
+   }
+  },
+  "checks{op:weather_cached}": {
+   "values": {
+    "rate": 1,
+    "passes": 15948,
+    "fails": 0
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": true
+    }
+   },
+   "type": "rate",
+   "contains": "default"
+  },
+  "vus": {
+   "type": "gauge",
+   "contains": "default",
+   "values": {
+    "value": 1,
+    "min": 0,
+    "max": 200
+   }
+  },
+  "http_req_duration{expected_response:true}": {
+   "values": {
+    "med": 175.249444,
+    "p(90)": 2337.7871764,
+    "p(95)": 2649.0796137999996,
+    "p(99)": 3173.6920619199996,
+    "max": 4101.875989,
+    "count": 17789,
+    "avg": 807.8193740769595,
+    "min": 4.577447
+   },
+   "type": "trend",
+   "contains": "time"
+  },
+  "http_req_duration{op:weather_cached}": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "med": 9.367591000000001,
+    "p(90)": 110.15183450000002,
+    "p(95)": 192.45890049999997,
+    "p(99)": 346.55959124999987,
+    "max": 581.962511,
+    "count": 5316,
+    "avg": 37.473524610045146,
+    "min": 4.577447
+   },
+   "thresholds": {
+    "p(95)<300": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_failed{op:nearby_runs}": {
+   "contains": "default",
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 7238
+   },
+   "thresholds": {
+    "rate<0.01": {
+     "ok": true
+    }
+   },
+   "type": "rate"
+  },
+  "http_req_tls_handshaking": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "count": 18155,
+    "avg": 0,
+    "min": 0,
+    "med": 0,
+    "p(90)": 0,
+    "p(95)": 0,
+    "p(99)": 0,
+    "max": 0
+   }
+  },
+  "data_received": {
+   "type": "counter",
+   "contains": "data",
+   "values": {
+    "count": 3126800686,
+    "rate": 5633819.977723195
+   }
+  },
+  "checks": {
+   "values": {
+    "fails": 1464,
+    "rate": 0.9753498004748195,
+    "passes": 57927
+   },
+   "type": "rate",
+   "contains": "default"
+  },
+  "weather_warmup_provider_calls": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "count": 6,
+    "rate": 0.010810705017972218
+   }
+  },
+  "login_failed": {
+   "values": {
+    "rate": 0,
+    "passes": 0,
+    "fails": 201
+   },
+   "type": "rate",
+   "contains": "default"
+  },
+  "iterations": {
+   "type": "counter",
+   "contains": "default",
+   "values": {
+    "rate": 32.316800867058284,
+    "count": 17936
+   }
+  },
+  "weather_cache_miss": {
+   "values": {
+    "count": 0,
+    "rate": 0
+   },
+   "thresholds": {
+    "count<=10": {
+     "ok": true
+    }
+   },
+   "type": "counter",
+   "contains": "default"
+  },
+  "checks{op:nearby_runs}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 1,
+    "passes": 21714,
+    "fails": 0
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": true
+    }
+   }
+  },
+  "http_req_blocked": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "p(95)": 0.007041,
+    "p(99)": 0.11236581999999998,
+    "max": 28.567926,
+    "count": 18155,
+    "avg": 0.008277279096667351,
+    "min": 0.000792,
+    "med": 0.003458,
+    "p(90)": 0.005958
+   }
+  },
+  "http_req_duration{op:nearby_runs}": {
+   "contains": "time",
+   "values": {
+    "p(99)": 3387.18950559,
+    "max": 4101.875989,
+    "count": 7238,
+    "avg": 1025.4980395053865,
+    "min": 29.390285,
+    "med": 667.434468,
+    "p(90)": 2627.3623288,
+    "p(95)": 2959.1247396999993
+   },
+   "thresholds": {
+    "p(95)<1000": {
+     "ok": false
+    }
+   },
+   "type": "trend"
+  },
+  "http_req_sending": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "avg": 0.013239017295510956,
+    "min": 0.002416,
+    "med": 0.010208,
+    "p(90)": 0.020375,
+    "p(95)": 0.0252493,
+    "p(99)": 0.045809319999999994,
+    "max": 3.588153,
+    "count": 18155
+   }
+  },
+  "login_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "count": 201,
+    "avg": 264.9777832935324,
+    "min": 224.339549,
+    "med": 245.991559,
+    "p(90)": 329.901818,
+    "p(95)": 377.003851,
+    "p(99)": 495.470943,
+    "max": 558.943272
+   }
+  },
+  "http_req_failed": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "rate": 0.020159735610024786,
+    "passes": 366,
+    "fails": 17789
+   }
+  },
+  "checks{op:runner_search}": {
+   "type": "rate",
+   "contains": "default",
+   "values": {
+    "fails": 1464,
+    "rate": 0.9319955406911928,
+    "passes": 20064
+   },
+   "thresholds": {
+    "rate>0.99": {
+     "ok": false
+    }
+   }
+  },
+  "http_req_duration": {
+   "type": "trend",
+   "contains": "time",
+   "values": {
+    "min": 0.766528,
+    "med": 155.485957,
+    "p(90)": 2327.7349418,
+    "p(95)": 2639.0114946999997,
+    "p(99)": 3169.30595042,
+    "max": 4101.875989,
+    "count": 18155,
+    "avg": 791.6225292143222
+   }
+  }
+ },
+ "root_group": {
+  "groups": [
+   {
+    "path": "::setup",
+    "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+    "groups": [],
+    "checks": [
+      {
+       "fails": 0,
+       "name": "login 200 with access token",
+       "path": "::setup::login 200 with access token",
+       "id": "9ce423c7cd3bd25e3b070e3316f2daa4",
+       "passes": 1
+      }
+     ],
+    "name": "setup"
+   }
+  ],
+  "checks": [
+   {
+    "id": "0400a3e77556d05fcd200d7ee5364d5a",
+    "passes": 200,
+    "fails": 0,
+    "name": "login 200 with access token",
+    "path": "::login 200 with access token"
+   },
+   {
+    "fails": 0,
+    "name": "runs 200",
+    "path": "::runs 200",
+    "id": "9d8d2fca720f2b30cb7067b67368ff62",
+    "passes": 7238
+   },
+   {
+    "id": "e88d7cf7cb81cd2266bb47e64cd1e774",
+    "passes": 7238,
+    "fails": 0,
+    "name": "runs lists upcoming runs",
+    "path": "::runs lists upcoming runs"
+   },
+   {
+    "name": "unjoined runs show approximate pins only",
+    "path": "::unjoined runs show approximate pins only",
+    "id": "0c55f22d3079c02b2175b26fae530d2c",
+    "passes": 7238,
+    "fails": 0
+   },
+   {
+    "id": "f1430541508c538fdf29bbd85cfe5de5",
+    "passes": 5016,
+    "fails": 366,
+    "name": "search 200",
+    "path": "::search 200"
+   },
+   {
+    "name": "search returns compatible runners",
+    "path": "::search returns compatible runners",
+    "id": "d84746dd90436758f43d8842cfd21a0a",
+    "passes": 5016,
+    "fails": 366
+   },
+   {
+    "name": "search filters experience",
+    "path": "::search filters experience",
+    "id": "915f25693403a7588d31d3f0ed70d430",
+    "passes": 5016,
+    "fails": 366
+   },
+   {
+    "passes": 5016,
+    "fails": 366,
+    "name": "search hides coordinates",
+    "path": "::search hides coordinates",
+    "id": "0d5b021971eb3cb2aa7e216f5c5037db"
+   },
+   {
+    "name": "weather 200",
+    "path": "::weather 200",
+    "id": "e4e1501ebd950658a533ceed2beba78f",
+    "passes": 5316,
+    "fails": 0
+   },
+   {
+    "name": "weather served from cache",
+    "path": "::weather served from cache",
+    "id": "484c1e9d4db196a554e2b3b95f8dc70f",
+    "passes": 5316,
+    "fails": 0
+   },
+   {
+    "fails": 0,
+    "name": "weather has live provider data",
+    "path": "::weather has live provider data",
+    "id": "5445855dc9a83cff0e8b8825f1664e91",
+    "passes": 5316
+   }
+  ],
+  "name": "",
+  "path": "",
+  "id": "d41d8cd98f00b204e9800998ecf8427e"
+ }
+}

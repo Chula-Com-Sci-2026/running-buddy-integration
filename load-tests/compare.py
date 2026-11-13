@@ -57,7 +57,7 @@ def main(directories):
             row(f'{op} {stat} (ms)', [fmt(r['value'](d, stat)) for r in runs])
         row(f'{op} failed (%)', [fmt((r['value'](f'http_req_failed{{op:{op}}}', 'rate') or 0) * 100, 2) for r in runs])
         row(f'{op} checks passed (%)', [fmt((r['value'](f'checks{{op:{op}}}', 'rate') or 0) * 100, 2) for r in runs])
-    row('Peak node CPU (millicores of 6000)', [fmt(r['peak'].get('node')) for r in runs])
+    row('Peak node CPU (millicores)', [fmt(r['peak'].get('node')) for r in runs])
     row('Peak node CPU (%)', [fmt(r['peak'].get('node %')) for r in runs])
     for name in ('gateway', 'profile', 'scheduling', 'conditions', 'discovery', 'identity', 'postgres', 'k6'):
         row(f'Peak CPU {name} (millicores, all pods)', [fmt(r['peak'].get(name)) for r in runs])

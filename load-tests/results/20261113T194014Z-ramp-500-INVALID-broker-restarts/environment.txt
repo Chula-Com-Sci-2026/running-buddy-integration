@@ -1,0 +1,38 @@
+# Recorded 2026-11-13T19:40:14Z
+k6 image: grafana/k6:2.3.0; script: running-buddy.js; args: SCENARIO=ramp TARGET_VUS=500
+host: Apple M4, 10 CPUs, 16 GiB RAM, macOS 26.6.2
+colima VMs (others running at the same time share the host CPU/RAM):
+  PROFILE    STATUS     ARCH       CPUS    MEMORY    DISK      RUNTIME       ADDRESS
+  default    Stopped    aarch64    4       8GiB      200GiB                  
+  cra-k8s    Running    aarch64    8       10GiB     60GiB     docker+k3s    
+node:
+  NAME             VERSION        CPU   MEMORY       RUNTIME
+  colima-cra-k8s   v1.33.3+k3s1   8     10160488Ki   docker://28.4.0
+deployments (replicas ready/desired) and per-pod limits:
+  NAME                  READY   DESIRED   CPU_REQ   CPU_LIM   MEM_LIM
+  conditions            1       1         100m      1         512Mi
+  discovery             1       1         100m      1         768Mi
+  discovery-outbox      1       1         50m       500m      512Mi
+  gateway               1       1         100m      1         512Mi
+  identity              3       3         100m      1         384Mi
+  identity-worker       1       1         50m       250m      192Mi
+  notification          1       1         100m      1         512Mi
+  notification-worker   1       1         50m       500m      256Mi
+  profile               1       1         100m      1         512Mi
+  reputation            1       1         100m      1         768Mi
+  scheduling            1       1         100m      1         512Mi
+gateway gRPC: DISCOVERY_TARGET=dns:///discovery-headless:50051 DISCOVERY_LB_POLICY=round_robin
+image revisions:
+  cra/conditions:local sha256:b6efebe67c30756bf3fb6bffcd90007a1028cb7f8470e56eaad1da348752b7d2 rev=bd2286a
+  cra/discovery:local sha256:8d8d1949eecf88c496ab42b6509474fc4614a296d5f00f5e663e00c17dec0a94 rev=cecd89a
+  cra/gateway:local sha256:af3816a73ea9ad32fabd49af7b606ac93fee7598572a931d43be94a8af31036c rev=a0d5d2e-dirty
+  cra/identity:local sha256:16531bbc794e0765f8b8b80e4fb64c74df345eb4be3066f472f204c02f9266fd rev=6ae824c-dirty
+  cra/notification:local sha256:52aef10111b6647d9ca15e9c260fdbff4f6f23e169a3f9c0edd1d9b2ba09a7eb rev=537d1f3
+  cra/profile:local sha256:3d00679376814962e53fa1be98a7c516520d518f031cf837986a63b1ddd08b2b rev=d52455e
+  cra/reputation:local sha256:6949547f1973058a9f100c8637b13326f1a90108122e147d615f95810fdeb188 rev=77a4d51
+  cra/scheduling:local sha256:7d6bd16168ab979ebd1ffcbcf53a552a6c5d4e622b1a06686cf3dc94a8462f8e rev=a49cb45
+  cra/tools:local sha256:f38c88146220a401504f183ee64ce1a7fcfd96e7d84c570b29a52fb599a96e92 rev=4e285bd
+dataset:
+  profiles_total=10006 profiles_loadtest=10000
+  users_total=5012 users_loadtest=5000
+  upcoming_runs=204
