@@ -1,0 +1,11 @@
+run 1 FCP 2030 ms  LCP 2042 ms  rtt 150ms  down 1638.4kbps  cpu x4
+run 2 FCP 1957 ms  LCP 2107 ms  rtt 150ms  down 1638.4kbps  cpu x4
+run 3 FCP 1960 ms  LCP 2110 ms  rtt 150ms  down 1638.4kbps  cpu x4
+
+NFR-1.4 First contentful paint < 2 s on 4G (Deliverable 1) / < 3 s (requirements.md).
+Tool: Lighthouse 12.6.1, mobile, simulated throttling = Lighthouse "Slow 4G" (150 ms RTT,
+1.6 Mbps down) + 4x CPU slowdown, against the production build (vite preview) of /login,
+Apple M4 host, 13 Nov 2026. Median of 3 runs: 1,960 ms.
+Verdict: D1 target PASS by a 40 ms margin (one of three runs was 2,030 ms); requirements.md target PASS.
+Slow 4G is the conservative preset; typical 4G is faster. The main bundle is 421 kB (130 kB gzip);
+splitting the map and route code would widen the margin.
