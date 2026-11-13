@@ -17,7 +17,9 @@ metadata:
   name: identity
   labels: {app: identity}
 spec:
-  replicas: 1
+  # Login checks bcrypt (cost 12, pure JS) while holding a pooled connection, so one pod serves a
+  # few logins per second; bursts beyond that time out on the pool. Each replica adds a Node thread.
+  replicas: 3
   selector:
     matchLabels: {app: identity}
   template:

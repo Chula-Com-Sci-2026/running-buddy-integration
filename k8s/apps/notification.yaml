@@ -23,6 +23,9 @@ spec:
     metadata:
       labels: {app: notification}
     spec:
+      # Service links would inject POSTGRES_PORT=tcp://... and RABBITMQ_PORT=tcp://..., which the
+      # service's settings read as integers.
+      enableServiceLinks: false
       terminationGracePeriodSeconds: 30
       initContainers:
         - name: wait-for-postgres
@@ -81,6 +84,9 @@ spec:
     metadata:
       labels: {app: notification-worker}
     spec:
+      # Service links would inject POSTGRES_PORT=tcp://... and RABBITMQ_PORT=tcp://..., which the
+      # service's settings read as integers.
+      enableServiceLinks: false
       initContainers:
         - name: wait-for-dependencies
           image: postgres:16-alpine
