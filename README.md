@@ -44,7 +44,7 @@ They keep the Compose names `profile` and `notification` on port 8000, so the ga
 python3 scripts/init-env.py                          # adds PROFILE_STORAGE_SECRET to .env
 ./scripts/switch-to-team-profile-notification.sh     # renames the old databases to *_legacy; deletes nothing
 docker compose up -d --build
-docker compose run --rm tools python seed.py         # Ray, Mali, Narin and Pim's profiles, a past run and three upcoming runs
+docker compose run --rm tools python seed.py         # Ray, Mali and five more runners' profiles, a past run and three upcoming runs
 ```
 
 The Python `profile-service` and `notification-service` folders are no longer used by the stack.
@@ -137,6 +137,8 @@ docker compose down
 ```
 
 Do not use `down -v` unless deliberately discarding all local databases.
+
+For a demo, `scripts/reset-demo.sh` does exactly that on purpose and then re-seeds; see [DEMO_DAY.md](DEMO_DAY.md).
 
 
 ## Demo against the team Identity PR branch
