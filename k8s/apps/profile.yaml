@@ -23,6 +23,8 @@ spec:
     metadata:
       labels: {app: profile}
     spec:
+      # Service links would inject RABBITMQ_PORT=tcp://..., which the service's config rejects.
+      enableServiceLinks: false
       terminationGracePeriodSeconds: 30
       initContainers:
         - name: wait-for-dependencies

@@ -44,14 +44,17 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 10
             failureThreshold: 36
+          # After startup, plain TCP checks on the AMQP port. rabbitmq-diagnostics boots an Erlang VM
+          # per call; on a CPU-saturated node (500-VU load test) it timed out, the kubelet restarted a
+          # healthy broker, and Identity, which needs the broker to start, crash-looped with it.
           readinessProbe:
-            exec: {command: ["rabbitmq-diagnostics", "-q", "check_port_connectivity"]}
+            tcpSocket: {port: 5672}
             periodSeconds: 10
-            timeoutSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
-            exec: {command: ["rabbitmq-diagnostics", "-q", "ping"]}
+            tcpSocket: {port: 5672}
             periodSeconds: 30
-            timeoutSeconds: 15
+            timeoutSeconds: 10
             failureThreshold: 4
           resources:
             requests: {cpu: 100m, memory: 256Mi}

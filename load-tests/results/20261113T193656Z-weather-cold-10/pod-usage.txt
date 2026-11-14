@@ -1,0 +1,52 @@
+## 19:36:59
+NODE colima-cra-k8s   1564m   19%   3384Mi   34%   
+conditions-66b768c866-xzchd            6m     54Mi    
+discovery-69cd9d6747-xk2r5             4m     283Mi   
+discovery-outbox-6865d6cc6f-td7vg      13m    115Mi   
+gateway-68b8864cb-4l9sv                11m    113Mi   
+identity-5f97b6f99f-gdgg9              8m     45Mi    
+identity-worker-d5c7df849-85rqj        0m     15Mi    
+notification-7777bd8d5d-z67cb          24m    450Mi   
+notification-worker-68f7ccc678-8x2s6   4m     60Mi    
+postgres-0                             20m    163Mi   
+profile-6f95d8b75-n4dhq                16m    38Mi    
+profile-storage-0                      11m    60Mi    
+rabbitmq-0                             155m   182Mi   
+redis-0                                11m    12Mi    
+reputation-584dc9dc67-ngm7z            12m    136Mi   
+scheduling-7ddd779b4f-ggwwq            12m    47Mi    
+## 19:37:14
+NODE colima-cra-k8s   2378m   29%   3402Mi   34%   
+conditions-66b768c866-xzchd            20m    54Mi    
+discovery-69cd9d6747-xk2r5             10m    283Mi   
+discovery-outbox-6865d6cc6f-td7vg      23m    115Mi   
+gateway-68b8864cb-4l9sv                42m    113Mi   
+identity-5f97b6f99f-gdgg9              60m    45Mi    
+identity-worker-d5c7df849-85rqj        1m     15Mi    
+notification-7777bd8d5d-z67cb          42m    450Mi   
+notification-worker-68f7ccc678-8x2s6   5m     60Mi    
+postgres-0                             41m    165Mi   
+profile-6f95d8b75-n4dhq                35m    38Mi    
+profile-storage-0                      9m     60Mi    
+rabbitmq-0                             424m   258Mi   
+redis-0                                22m    12Mi    
+reputation-584dc9dc67-ngm7z            37m    136Mi   
+scheduling-7ddd779b4f-ggwwq            16m    47Mi    
+## 19:37:29
+NODE colima-cra-k8s   1318m   16%   3401Mi   34%   
+conditions-66b768c866-xzchd            19m   56Mi    
+discovery-69cd9d6747-xk2r5             4m    283Mi   
+discovery-outbox-6865d6cc6f-td7vg      7m    115Mi   
+gateway-68b8864cb-4l9sv                21m   113Mi   
+identity-5f97b6f99f-gdgg9              5m    45Mi    
+identity-worker-d5c7df849-85rqj        0m    15Mi    
+k6-1794598616-szj9p                    13m   10Mi    
+notification-7777bd8d5d-z67cb          17m   450Mi   
+notification-worker-68f7ccc678-8x2s6   3m    60Mi    
+postgres-0                             15m   163Mi   
+profile-6f95d8b75-n4dhq                9m    38Mi    
+profile-storage-0                      4m    60Mi    
+rabbitmq-0                             99m   182Mi   
+redis-0                                9m    12Mi    
+reputation-584dc9dc67-ngm7z            9m    136Mi   
+scheduling-7ddd779b4f-ggwwq            8m    47Mi    

@@ -88,7 +88,7 @@ function runnerSearch(headers) {
   try { body = res.json() } catch (_) { /* counted as a failed check */ }
   check(res, {
     'search 200': (r) => r.status === 200,
-    'search returns compatible runners': () => Array.isArray(body) && body.length > 0 && body.every((p) => p.id && typeof p.match === 'number'),
+    'search returns compatible runners': () => Array.isArray(body) && body.length > 0 && body.every((p) => p.id && typeof p.distanceKm === 'number'),
     'search filters experience': () => Array.isArray(body) && (experience === 'All' || body.every((p) => p.experience === experience)),
     'search hides coordinates': () => Array.isArray(body) && body.every((p) => !('latitude' in p) && !('longitude' in p)),
   }, { op: 'runner_search' })

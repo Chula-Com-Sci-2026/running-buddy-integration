@@ -1,0 +1,9 @@
+scenario=smoke targets=d1 duration=16s vus_max=1 iterations=3 http_reqs=24 (1.50/s) dropped_iterations=0
+op              count    req/s   avg ms   p50 ms   p90 ms   p95 ms   p99 ms   max ms  failed%  checks%  thresholds
+runner_search        3     0.19      369      437      445      446      447      447     0.00    75.00  p(95)<2000 PASS; rate<0.01 PASS; rate>0.99 FAIL
+nearby_runs          3     0.19      153      131      206      216      223      225     0.00   100.00  p(95)<1000 PASS; rate<0.01 PASS; rate>0.99 PASS
+weather_cached       3     0.19       19       17       24       25       26       26     0.00   100.00  p(95)<300 PASS; rate<0.01 PASS; rate>0.99 PASS
+login                2     0.12      581      581      694      708      720      723     0.00        -  
+weather_cache_miss: {"count":0,"rate":0} count<=10 PASS
+weather_warmup_provider_calls: {"rate":0.3744479182019422,"count":6} 
+started=2026-11-13T19:24:38Z finished=2026-11-13T19:25:01Z k6_exit_code=99 (0 = all thresholds passed, 99 = a threshold failed)

@@ -1,0 +1,6 @@
+scenario=cold targets=d1 duration=24s vus_max=1 iterations=5 http_reqs=11 (0.45/s) dropped_iterations=0
+op              count    req/s   avg ms   p50 ms   p90 ms   p95 ms   p99 ms   max ms  failed%  checks%  thresholds
+weather_cold         5     0.21     3658     2922     5750     6563        -     7376        -   100.00  max<3000 FAIL; rate>0.99 PASS
+login                1     0.04      734      734      734      734        -      734     0.00        -  
+weather_cache_miss_duration: {"avg":3657.7211704,"min":2083.569313,"med":2921.530652,"p(90)":5749.8548442,"p(95)":6563.0216875999995,"max":7376.188531,"count":5} max<3000 FAIL
+started=2026-11-13T19:35:41Z finished=2026-11-13T19:36:11Z k6_exit_code=99 (0 = all thresholds passed, 99 = a threshold failed)
