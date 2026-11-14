@@ -21,6 +21,8 @@ export K6_WEB_DASHBOARD=true
 export K6_WEB_DASHBOARD_OPEN="${K6_WEB_DASHBOARD_OPEN:-true}"
 export K6_WEB_DASHBOARD_HOST="${K6_WEB_DASHBOARD_HOST:-127.0.0.1}"
 export K6_WEB_DASHBOARD_PORT="${K6_WEB_DASHBOARD_PORT:-5665}"
+# k6 defaults to one point every 10 s, so a 2-minute demo moves in 12 steps; 2 s looks live.
+export K6_WEB_DASHBOARD_PERIOD="${K6_WEB_DASHBOARD_PERIOD:-2s}"
 export K6_WEB_DASHBOARD_EXPORT="$DASHBOARD_RESULTS_DIR/report.html"
 
 printf 'Live dashboard: http://%s:%s\n' "$K6_WEB_DASHBOARD_HOST" "$K6_WEB_DASHBOARD_PORT"
