@@ -7,6 +7,7 @@ import jwt
 import psycopg
 from psycopg.types.json import Jsonb
 from argon2 import PasswordHasher
+from demo_community import seed_community
 
 RUNNER_A='11111111-1111-4111-8111-111111111111'
 RUNNER_B='22222222-2222-4222-8222-222222222222'
@@ -43,16 +44,14 @@ def main():
               (RUNNER_F,{'name':'Fah W.','bio':'After-work 5K most days, happy to chat on the way round.','paceMin':6,'paceMax':6.5,'experience':'Intermediate','area':'Benjasiri Park','availability':'Evenings','latitude':13.7305,'longitude':100.5677}),
               (RUNNER_G,{'name':'Ton P.','bio':'Training for a half marathon. Saturday long runs, steady pace.','paceMin':5.5,'paceMax':6.5,'experience':'Intermediate','area':'Chatuchak Park','availability':'Weekends','latitude':13.803,'longitude':100.553})]
     for subject,profile in profiles:
-        now=datetime.now(timezone.utc)
-        token=jwt.encode({'sub':subject,'iss':'cant-run-alone-local','aud':'cant-run-alone-services','iat':now,'exp':now+timedelta(minutes=5)},os.environ['JWT_SECRET'],algorithm='HS256')
-        headers={'Authorization':f'Bearer {token}'}
+        headers=headers_for(subject)
         profile_url=os.environ['PROFILE_URL']+'/api/v1/me/profile'
         if httpx.get(profile_url,headers=headers,timeout=10).status_code==404:
             httpx.put(profile_url,headers=headers,timeout=10,json=profile).raise_for_status()
     starts=datetime.now(timezone.utc)-timedelta(days=1)
     weather={'temperature':29,'humidity':65,'rainChance':20,'pm25':15,'level':'great','label':'Historical demo fixture','updatedAt':starts.isoformat(),'stale':True,'provider':'prepared past-run fixture'}
     with database('scheduling') as connection:
-        connection.execute('INSERT INTO runs(id,organizer_id,title,meeting_point,latitude,longitude,starts_at,ends_at,distance_km,pace,participant_limit,weather) VALUES (%s,%s,%s,%s,13.730,100.541,%s,%s,5,%s,5,%s) ON CONFLICT(id) DO NOTHING',(PAST_RUN,RUNNER_A,'Prepared past run — attendance demo','Lumphini Park Gate 1',starts,starts+timedelta(hours=1),'6–7',Jsonb(weather)))
+        connection.execute('INSERT INTO runs(id,organizer_id,title,meeting_point,latitude,longitude,starts_at,ends_at,distance_km,pace,participant_limit,weather) VALUES (%s,%s,%s,%s,13.730,100.541,%s,%s,5,%s,5,%s) ON CONFLICT(id) DO NOTHING',(PAST_RUN,RUNNER_A,'Lumphini evening 5K','Lumphini Park Gate 1',starts,starts+timedelta(hours=1),'6–7',Jsonb(weather)))
         for subject in (RUNNER_A,RUNNER_B):
             connection.execute('INSERT INTO participants(run_id,runner_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(PAST_RUN,subject))
         # Re-seeding moves these forward again, so the demo always has runs to browse, join and leave.
@@ -64,5 +63,12 @@ def main():
                 ON CONFLICT(id) DO UPDATE SET starts_at=EXCLUDED.starts_at,ends_at=EXCLUDED.ends_at,weather=EXCLUDED.weather''',(run_id,organizer,title,place,lat,lng,start,start+timedelta(hours=1),km,pace,limit,Jsonb(forecast)))
             connection.execute('INSERT INTO participants(run_id,runner_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(run_id,organizer))
     print('Seeded Ray and Mali (password: runner123), profiles for Ray, Mali, Narin, Pim, Beam, Fah and Ton, a prepared past run and three upcoming runs. Existing data preserved.')
+    seed_community(database,headers_for,{'mali':RUNNER_B,'narin':RUNNER_C,'pim':RUNNER_D,'beam':RUNNER_E,'fah':RUNNER_F,'ton':RUNNER_G})
+
+def headers_for(subject):
+    """A short-lived token for one runner, so a seed can call a service's API as that runner."""
+    now=datetime.now(timezone.utc)
+    token=jwt.encode({'sub':subject,'iss':'cant-run-alone-local','aud':'cant-run-alone-services','iat':now,'exp':now+timedelta(minutes=5)},os.environ['JWT_SECRET'],algorithm='HS256')
+    return {'Authorization':f'Bearer {token}'}
 
 if __name__=='__main__':main()
