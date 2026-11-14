@@ -36,7 +36,7 @@ def main():
             for subject,email,phone in [(RUNNER_A,'ray@example.com','+66811111111'),(RUNNER_B,'mali@example.com','+66822222222')]:
                 connection.execute('INSERT INTO accounts(id,email,phone,password_hash,phone_verified) VALUES (%s,%s,%s,%s,true) ON CONFLICT(id) DO NOTHING',(subject,email,phone,PasswordHasher().hash('runner123')))
     # Profiles go through Profile's own API, so the service writes its outbox and publishes ProfileUpdated.
-    profiles=[(RUNNER_A,{'name':'Ray Attajak','bio':'Evening runner','paceMin':6,'paceMax':7,'experience':'Intermediate','area':'Lumphini Park','availability':'Evenings','latitude':13.730,'longitude':100.541}),
+    profiles=[(RUNNER_A,{'name':'Ray N.','bio':'Evening runner','paceMin':6,'paceMax':7,'experience':'Intermediate','area':'Lumphini Park','availability':'Evenings','latitude':13.730,'longitude':100.541}),
               (RUNNER_B,{'name':'Mali S.','bio':'Evening runner','paceMin':6,'paceMax':7,'experience':'Intermediate','area':'Lumphini Park','availability':'Evenings','latitude':13.731,'longitude':100.541}),
               (RUNNER_C,{'name':'Narin K.','bio':'Easy miles on weekdays, longer runs when Bangkok is still quiet.','paceMin':5.5,'paceMax':6.5,'experience':'Advanced','area':'Benjakitti Park','availability':'Weekday mornings','latitude':13.729,'longitude':100.558}),
               (RUNNER_D,{'name':'Pim C.','bio':'Building a first 10K habit. Friendly pace and plenty of water breaks.','paceMin':6.5,'paceMax':7.5,'experience':'Beginner','area':'Chulalongkorn University','availability':'Weekends','latitude':13.738,'longitude':100.528}),
