@@ -14,6 +14,10 @@ RUNNER_B='22222222-2222-4222-8222-222222222222'
 # neither is his buddy, so Home's strongest matches has someone to show.
 RUNNER_C='44444444-4444-4444-8444-444444444444'
 RUNNER_D='55555555-5555-4555-8555-555555555555'
+# Spread over 0.4, 2.9 and 8 km from Ray so each Discover distance and experience filter changes the list.
+RUNNER_E='77777777-7777-4777-8777-777777777777'
+RUNNER_F='88888888-8888-4888-8888-888888888888'
+RUNNER_G='99999999-9999-4999-8999-999999999999'
 PAST_RUN='33333333-3333-4333-8333-333333333333'
 # (id, organizer, title, meeting point, latitude, longitude, days ahead, ICT hour, ICT minute, km, pace, limit)
 UPCOMING_RUNS=[('66666666-6666-4666-8666-666666666661',RUNNER_B,'Sunset social 5K','Lumphini Park Clock Tower',13.7317,100.5415,1,18,30,5,'6:00–6:30',8),
@@ -34,7 +38,10 @@ def main():
     profiles=[(RUNNER_A,{'name':'Ray Attajak','bio':'Evening runner','paceMin':6,'paceMax':7,'experience':'Intermediate','area':'Lumphini Park','availability':'Evenings','latitude':13.730,'longitude':100.541}),
               (RUNNER_B,{'name':'Mali S.','bio':'Evening runner','paceMin':6,'paceMax':7,'experience':'Intermediate','area':'Lumphini Park','availability':'Evenings','latitude':13.731,'longitude':100.541}),
               (RUNNER_C,{'name':'Narin K.','bio':'Easy miles on weekdays, longer runs when Bangkok is still quiet.','paceMin':5.5,'paceMax':6.5,'experience':'Advanced','area':'Benjakitti Park','availability':'Weekday mornings','latitude':13.729,'longitude':100.558}),
-              (RUNNER_D,{'name':'Pim C.','bio':'Building a first 10K habit. Friendly pace and plenty of water breaks.','paceMin':6.5,'paceMax':7.5,'experience':'Beginner','area':'Chulalongkorn University','availability':'Weekends','latitude':13.738,'longitude':100.528})]
+              (RUNNER_D,{'name':'Pim C.','bio':'Building a first 10K habit. Friendly pace and plenty of water breaks.','paceMin':6.5,'paceMax':7.5,'experience':'Beginner','area':'Chulalongkorn University','availability':'Weekends','latitude':13.738,'longitude':100.528}),
+              (RUNNER_E,{'name':'Beam R.','bio':'New to running and looking for a patient partner for short loops.','paceMin':7,'paceMax':8,'experience':'Beginner','area':'Lumphini Park','availability':'Evenings','latitude':13.732,'longitude':100.544}),
+              (RUNNER_F,{'name':'Fah W.','bio':'After-work 5K most days, happy to chat on the way round.','paceMin':6,'paceMax':6.5,'experience':'Intermediate','area':'Benjasiri Park','availability':'Evenings','latitude':13.7305,'longitude':100.5677}),
+              (RUNNER_G,{'name':'Ton P.','bio':'Training for a half marathon. Saturday long runs, steady pace.','paceMin':5.5,'paceMax':6.5,'experience':'Intermediate','area':'Chatuchak Park','availability':'Weekends','latitude':13.803,'longitude':100.553})]
     for subject,profile in profiles:
         now=datetime.now(timezone.utc)
         token=jwt.encode({'sub':subject,'iss':'cant-run-alone-local','aud':'cant-run-alone-services','iat':now,'exp':now+timedelta(minutes=5)},os.environ['JWT_SECRET'],algorithm='HS256')
@@ -56,6 +63,6 @@ def main():
             connection.execute('''INSERT INTO runs(id,organizer_id,title,meeting_point,latitude,longitude,starts_at,ends_at,distance_km,pace,participant_limit,weather) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT(id) DO UPDATE SET starts_at=EXCLUDED.starts_at,ends_at=EXCLUDED.ends_at,weather=EXCLUDED.weather''',(run_id,organizer,title,place,lat,lng,start,start+timedelta(hours=1),km,pace,limit,Jsonb(forecast)))
             connection.execute('INSERT INTO participants(run_id,runner_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(run_id,organizer))
-    print('Seeded Ray and Mali (password: runner123), profiles for Ray, Mali, Narin and Pim, a prepared past run and three upcoming runs. Existing data preserved.')
+    print('Seeded Ray and Mali (password: runner123), profiles for Ray, Mali, Narin, Pim, Beam, Fah and Ton, a prepared past run and three upcoming runs. Existing data preserved.')
 
 if __name__=='__main__':main()
