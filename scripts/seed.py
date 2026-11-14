@@ -48,7 +48,8 @@ def main():
         profile_url=os.environ['PROFILE_URL']+'/api/v1/me/profile'
         if httpx.get(profile_url,headers=headers,timeout=10).status_code==404:
             httpx.put(profile_url,headers=headers,timeout=10,json=profile).raise_for_status()
-    starts=datetime.now(timezone.utc)-timedelta(days=1)
+    # Yesterday at 18:00 ICT: always over by demo time, and a believable evening run on screen.
+    starts=(datetime.now(ICT)-timedelta(days=1)).replace(hour=18,minute=0,second=0,microsecond=0)
     weather={'temperature':29,'humidity':65,'rainChance':20,'pm25':15,'level':'great','label':'Historical demo fixture','updatedAt':starts.isoformat(),'stale':True,'provider':'prepared past-run fixture'}
     with database('scheduling') as connection:
         connection.execute('INSERT INTO runs(id,organizer_id,title,meeting_point,latitude,longitude,starts_at,ends_at,distance_km,pace,participant_limit,weather) VALUES (%s,%s,%s,%s,13.730,100.541,%s,%s,5,%s,5,%s) ON CONFLICT(id) DO NOTHING',(PAST_RUN,RUNNER_A,'Lumphini evening 5K','Lumphini Park Gate 1',starts,starts+timedelta(hours=1),'6–7',Jsonb(weather)))

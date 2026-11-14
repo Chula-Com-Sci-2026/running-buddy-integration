@@ -33,17 +33,21 @@ Around them: 16 more runners with avatars, ratings and running totals (`scripts/
    (e.g. `+66812345678`), password of 8+ characters, consent.
 2. The code appears in the OTP terminal as `[LOCAL CONSOLE OTP] phone=… code=123456 (not an SMS delivery)`.
    Say so: the console adapter stands in for SMS. The code expires after 5 minutes.
-3. Verify, then set up the profile: drop the pin on the map, the running area fills in. Discover
-   already shows a dozen runners around Lumphini.
+3. Verify, then set up the profile: drop the pin on the map, the running area fills in. **Set
+   Experience to Beginner**: the form defaults to Intermediate at Lumphini, which would put this new
+   runner next to Mali in Ray's "2 km + Intermediate" search. Discover already shows a dozen runners
+   around Lumphini.
 4. Sign out and **log in as Ray** for the rest of the demo.
 
 Each email and phone registers once; use a new pair for each rehearsal or reset first.
 
 ## Home: Who's nearby
 
-Ray's radar shows **4 runs within 1 km** around Lumphini Park (Mali's, Arm's, Ploy's and his own).
-Unjoined runs are placed to about 1 km, the same rule as runner areas; the exact pin is for
-participants only. Tap the radar for the live map.
+Ray's radar shows **4 runs within 1 km** around Lumphini Park (Mali's, Arm's, Ploy's and his own),
+and his next run is "Weekend long run". Unjoined runs are placed to about 1 km, the same rule as
+runner areas; the exact pin is for participants only. Tap the radar for Who's nearby: allow location,
+or press **Use demo location** (near Lumphini) if the browser has none. Unjoined runs share one
+rounded point, so their distances read the same; that is the privacy rule, not a bug.
 
 ## UC-02: find a buddy
 
@@ -66,14 +70,15 @@ Distances are between ~1 km area cells (NFR-4.1), so several runners read "0 km"
 
 1. Ray: **Create run** at Lumphini Park, any time in the next few days. The weather and PM2.5 card is
    the live forecast.
-2. Mali opens the run: only the public meeting point. She **joins** and now sees the exact pin.
+2. Mali opens the run: only the public meeting point ("Join this run to see the exact pin"). She
+   **joins** and a map with the exact pin and an "Open in Google Maps" link appear.
 
 ## UC-04: after the run
 
-No waiting for the new run: Ray and Mali are already in **"Lumphini evening 5K"**, which ended yesterday.
+No waiting for the new run: Ray and Mali are already in **"Lumphini evening 5K"** (yesterday, 18:00).
 
 1. Both open Activity: **Confirm attendance**. After both confirm, the run is complete.
-2. Rate each other, then **Save running record** (metres and seconds, e.g. `5000` and `1800`).
+2. Rate each other, then **Save running record** (prefilled with 5000 m and 1800 s).
 3. Ray's running history panel appears. Mali's rating stays hidden: one rating exists and three are
    needed before it is shown.
 
