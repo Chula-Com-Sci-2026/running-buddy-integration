@@ -6,6 +6,7 @@ set -eu
 
 CONTEXT="${CONTEXT:-colima-cra-k8s}"
 NAMESPACE="${NAMESPACE:-cra}"
+command -v kubectl >/dev/null || { echo 'kubectl is not on PATH; the feed cannot start.' >&2; exit 1; }
 k() { kubectl --context "$CONTEXT" -n "$NAMESPACE" "$@"; }
 stamp() { while IFS= read -r line; do printf '%s %s\n' "$(date +%H:%M:%S)" "$line"; done; }
 

@@ -29,7 +29,8 @@ printf '  %d:%02d  delete the Profile pod(s); traffic should keep flowing\n' $((
 printf '  2:00  ramp down, then the k6 summary prints below\n\n'
 
 if [ "$WATCH" = true ]; then
-  watch_cmd="cd '$(pwd)' && CONTEXT='$CONTEXT' NAMESPACE='$NAMESPACE' '$SCRIPT_DIR/demo-watch.sh'"
+  # The new window starts without this shell's PATH, so kubectl from Homebrew would be missing there.
+  watch_cmd="cd '$(pwd)' && PATH='$PATH' CONTEXT='$CONTEXT' NAMESPACE='$NAMESPACE' '$SCRIPT_DIR/demo-watch.sh'"
   case "${TERM_PROGRAM:-}" in
     iTerm.app) osascript -e "tell application \"iTerm\" to create window with default profile command \"sh -c \\\"$watch_cmd\\\"\"" >/dev/null ;;
     Apple_Terminal) osascript -e "tell application \"Terminal\" to do script \"$watch_cmd\"" >/dev/null ;;
