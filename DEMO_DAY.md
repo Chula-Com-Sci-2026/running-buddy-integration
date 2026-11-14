@@ -45,8 +45,9 @@ Each email and phone registers once; use a new pair for each rehearsal or reset 
 
 Ray's radar shows **4 runs within 1 km** around Lumphini Park (Mali's, Arm's, Ploy's and his own),
 and his next run is "Weekend long run". Unjoined runs are placed to about 1 km, the same rule as
-runner areas; the exact pin is for participants only. Tap the radar for Who's nearby: allow location,
-or press **Use demo location** (near Lumphini) if the browser has none. Unjoined runs share one
+runner areas; the exact pin is for participants only. Tap the radar for Who's nearby: it uses the
+browser's location, and if the laptop has no fix it falls back to Ray's saved pin and lists the same 4
+runs. **Use my location** retries the device position. Unjoined runs share one
 rounded point, so their distances read the same; that is the privacy rule, not a bug.
 
 ## UC-02: find a buddy
