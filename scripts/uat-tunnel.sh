@@ -103,6 +103,8 @@ stop() {
   # vite preview runs under npx; make sure nothing is left holding the port.
   lsof -ti "tcp:$port" -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
   rm -f "$state/url"
+  # With the stack down, starting Profile alone would wait forever for a healthy database.
+  if ! docker compose ps --status running --services 2>/dev/null | grep -qx postgres; then echo "Tunnel closed."; return; fi
   echo "Tunnel closed. Pointing Profile's photo links back at localhost..."
   restart_profile ""
 }
